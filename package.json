@@ -1,0 +1,19 @@
+{
+  "name": "researcher-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "stagehand": "tsx stagehand/main.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/google-vertex": "^5.0.0-beta.23",
+    "@browserbasehq/stagehand": "^3.2.0",
+    "dotenv": "^17.3.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

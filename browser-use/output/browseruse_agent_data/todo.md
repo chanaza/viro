@@ -1,0 +1,6 @@
+- [ ] Search for 'Shufersal branches Israel' to find a reliable source of information.
+- [ ] Navigate to the most relevant website.
+- [ ] Identify and extract branch name, address, and city for all branches.
+- [ ] Handle pagination or multiple pages if necessary.
+- [ ] Save the extracted data to a CSV file named 'branches.csv'.
+- [ ] Verify the content of 'branches.csv'.
