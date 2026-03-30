@@ -5,6 +5,8 @@
     "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": ["node"],
+    "typeRoots": ["../node_modules/@types"]
   }
 }
