@@ -14,7 +14,7 @@ navigation: |
   4. **Regular rendered list** (search results, already-loaded cards) — Extract directly from the existing DOM.
   For paginated content ("הבא" button / page numbers): navigate in ascending order to the end, do not skip, do not go back.
 
-  **Switching between sites:** When a site fails or is blocked — navigate directly to the next site in the current tab (new_tab: False). Do not close tabs and open new ones — this may crash the browser.
+  **Switching between sites:** Navigate directly to the next site in the current tab (new_tab: False). Do not close tabs and open new ones — this may crash the browser.
 
   **Extracting data from a page:**
   - Always try extract first — even when you already have information from find_elements about the DOM structure.
@@ -22,9 +22,10 @@ navigation: |
   - evaluate returning [] or an error = move immediately to the next site. Any additional evaluate attempt is strictly forbidden, no exceptions.
   - Partial result (some fields empty) = full success. Accumulate the data and move immediately to the next site. Do not attempt to improve a result that was already received.
 
-  **Stop rule (after finishing each site):**
-  - No results found or extraction failed — continue to the next site.
-  - Results found — {stop_rule}
+  **Stop rule (after each site):**
+  - Failed, blocked, or no results → next site in the prescribed sequence.
+  - Results found → {stop_rule}
+  "Next site" = strictly the next item in the task's list. No alternatives, no skips, no invented sites.
 
 stop_rule:
   collect_all: "continue to the next site and collect from all sources."
