@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(powershell.exe -Command \"where.exe npm\")",
+      "Bash(powershell.exe -Command \"where.exe node; where.exe tsx\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem -Path ''C:\\\\'' -Recurse -Filter ''node.exe'' -ErrorAction SilentlyContinue | Select-Object -First 3 FullName\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem ''C:\\\\Users\\\\chana\\\\AppData\\\\Local'' -Filter ''node*'' -ErrorAction SilentlyContinue | Select FullName\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem ''C:\\\\Program Files'' -Filter ''node*'' -ErrorAction SilentlyContinue | Select FullName; Get-ChildItem ''C:\\\\Program Files \\(x86\\)'' -Filter ''node*'' -ErrorAction SilentlyContinue | Select FullName\")",
+      "Bash(powershell.exe -Command \":*)",
+      "Bash(powershell.exe -Command \"Get-ChildItem ''C:\\\\'' -Directory -ErrorAction SilentlyContinue | Select Name\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem ''C:\\\\Users\\\\chana'' -Directory -ErrorAction SilentlyContinue | Select Name\")",
+      "Bash(powershell.exe -Command \"Test-Path ''C:\\\\PythonProjects\\\\researcher-agent\\\\node_modules''\")",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" run stagehand)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" -e \":*)",
+      "Bash(curl -s -o /dev/null -w \"%{redirect_url}\\\\n%{http_code}\" \"https://easy.co.il/search?q=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C\")",
+      "Bash(curl -s -o /dev/null -w \"%{redirect_url}\\\\n%{http_code}\" \"https://easy.co.il/?q=%D7%A9%D7%95%D7%A4%D7%A8%D7%A1%D7%9C\")",
+      "Bash(npx tsx:*)",
+      "Bash(npx tsc:*)",
+      "Bash(python main.py)",
+      "Bash(python3 main.py)"
+    ]
+  }
+}
