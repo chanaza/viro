@@ -6,14 +6,16 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from urllib.parse import unquote
 
+import yaml
+
 from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile
 from browser_use.llm.google.chat import ChatGoogle
 
-from src.config import LLM_MAX_OUTPUT_TOKENS
+from src.config import COLLECT_ALL, LLM_MAX_OUTPUT_TOKENS
 from src.core.models import SourceLog
 
-_PROMPTS = Path(__file__).parent / "prompts"
+_PROMPTS_FILE = Path(__file__).parent / "prompts.yaml"
 
 
 class ResearchAgent(ABC):
@@ -66,9 +68,11 @@ class ResearchAgent(ABC):
 
     def _build_task(self, specific_instructions: str) -> str:
         """Assembles the full task prompt: preamble + navigation rules + specific instructions."""
-        preamble   = (_PROMPTS / "preamble.txt").read_text(encoding="utf-8")
-        navigation = (_PROMPTS / "navigation.txt").read_text(encoding="utf-8")
-        return f"""{preamble.format(goal=self.goal)}
+        prompts    = yaml.safe_load(_PROMPTS_FILE.read_text(encoding="utf-8"))
+        stop_rule  = prompts["stop_rule"]["collect_all" if COLLECT_ALL else "stop_first"]
+        preamble   = prompts["preamble"].format(goal=self.goal)
+        navigation = prompts["navigation"].format(stop_rule=stop_rule)
+        return f"""{preamble}
 {navigation}
 
 {specific_instructions}"""
