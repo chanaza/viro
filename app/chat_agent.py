@@ -27,7 +27,13 @@ class ChatBrowserAgent:
             location=os.getenv("LLM_LOCATION"),
             vertexai=True,
         )
-        browser_profile = BrowserProfile(args=["--ignore-certificate-errors"])
+        browser_profile = BrowserProfile(
+            args=[
+                "--ignore-certificate-errors",
+                "--window-size=900,900",
+                "--window-position=960,0",
+            ]
+        )
 
         self._agent = Agent(
             task=task,
@@ -44,7 +50,9 @@ class ChatBrowserAgent:
         except asyncio.CancelledError:
             await self.queue.put({"type": "stopped"})
         except Exception as e:
-            await self.queue.put({"type": "error", "message": str(e)})
+            import traceback
+            msg = traceback.format_exc()
+            await self.queue.put({"type": "error", "message": msg})
 
     # ── Control ───────────────────────────────────────────────────────────────
 
