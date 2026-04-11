@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -13,8 +12,7 @@ from pydantic import BaseModel
 # Load .env from repo root
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "browser-use"))
-from app.chat_agent import ChatBrowserAgent  # noqa: E402
+from app.chat_agent import ChatBrowserAgent
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
