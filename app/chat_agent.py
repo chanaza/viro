@@ -22,6 +22,7 @@ class ChatBrowserAgent:
         self._pending:  asyncio.Queue       = asyncio.Queue()  # incoming user messages
         self.queue:     asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
         self._history:  list[dict]          = []               # [{role, content}, ...]
+        self.waiting:   bool                = False            # between tasks, ready for next
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -68,8 +69,10 @@ class ChatBrowserAgent:
         try:
             await self._agent.run()
             while True:
+                self.waiting = True
                 await self.queue.put({"type": "waiting"})
                 next_msg = await asyncio.wait_for(self._pending.get(), timeout=300)
+                self.waiting = False
                 if next_msg is None:
                     break
                 self._history.append({"role": "user", "content": next_msg})
