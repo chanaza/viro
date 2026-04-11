@@ -36,7 +36,7 @@ class ChatBrowserAgent:
         )
 
         self._agent = Agent(
-            task=task,
+            task=f"Use Google (not DuckDuckGo) for any web searches.\n\n{task}",
             llm=llm,
             browser_profile=browser_profile,
             register_new_step_callback=self._on_step,
