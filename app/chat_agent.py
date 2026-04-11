@@ -76,7 +76,7 @@ class ChatBrowserAgent:
                 if next_msg is None:
                     break
                 self._history.append({"role": "user", "content": next_msg})
-                self._agent.add_new_task(self._build_task(next_msg))
+                self._agent.add_new_task(next_msg)
                 await self._agent.run()
         except asyncio.TimeoutError:
             await self.queue.put({"type": "stopped"})
@@ -107,7 +107,7 @@ class ChatBrowserAgent:
         if self._agent and not self._run_task.done():
             if self._agent.state.paused:
                 self._history.append({"role": "user", "content": message})
-                self._agent.add_new_task(self._build_task(message))
+                self._agent.add_new_task(message)
                 self._agent.resume()
             else:
                 self._pending.put_nowait(message)
