@@ -3,17 +3,24 @@ import os
 import sys
 
 from browser_use import Agent
-from browser_use.browser.profile import BrowserProfile
+from browser_use.browser.profile import BrowserProfile, ViewportSize
 from browser_use.llm.google.chat import ChatGoogle
+
+_SYSTEM_PREFIX = (
+    "You are a helpful browser assistant. "
+    "Use Google (engine='google') for any web searches — never DuckDuckGo. "
+    "Always reply to the user in the same language they used in their request."
+)
 
 
 class ChatBrowserAgent:
-    """Thin wrapper around browser-use Agent for conversational, unstructured use."""
+    """Browser-use agent with conversational memory across multiple tasks."""
 
     def __init__(self):
-        self._agent: Agent | None = None
+        self._agent:    Agent | None        = None
         self._run_task: asyncio.Task | None = None
-        self.queue: asyncio.Queue = asyncio.Queue()
+        self._pending:  asyncio.Queue       = asyncio.Queue()  # incoming user messages
+        self.queue:     asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -28,31 +35,39 @@ class ChatBrowserAgent:
             vertexai=True,
         )
         browser_profile = BrowserProfile(
-            args=[
-                "--ignore-certificate-errors",
-                "--window-size=900,900",
-                "--window-position=960,0",
-            ]
+            args=["--ignore-certificate-errors"],
+            window_size=ViewportSize(width=960, height=1040),
+            window_position=ViewportSize(width=960, height=0),
         )
 
         self._agent = Agent(
-            task=f"Use Google (not DuckDuckGo) for any web searches.\n\n{task}",
+            task=f"{_SYSTEM_PREFIX}\n\n{task}",
             llm=llm,
             browser_profile=browser_profile,
             register_new_step_callback=self._on_step,
+            register_done_callback=self._on_done,
         )
-        self._run_task = asyncio.create_task(self._run())
+        self._run_task = asyncio.create_task(self._run_loop())
 
-    async def _run(self) -> None:
+    async def _run_loop(self) -> None:
+        """Runs the agent continuously: after each done(), waits for the next message."""
         try:
-            result = await self._agent.run()
-            await self.queue.put({"type": "done", "result": result.final_result() or ""})
+            await self._agent.run()
+            # After first task completes, enter wait-loop for follow-up messages
+            while True:
+                await self.queue.put({"type": "waiting"})
+                next_msg = await asyncio.wait_for(self._pending.get(), timeout=300)
+                if next_msg is None:  # stop signal
+                    break
+                self._agent.add_new_task(f"{_SYSTEM_PREFIX}\n\n{next_msg}")
+                await self._agent.run()
+        except asyncio.TimeoutError:
+            await self.queue.put({"type": "stopped"})
         except asyncio.CancelledError:
             await self.queue.put({"type": "stopped"})
-        except Exception as e:
+        except Exception:
             import traceback
-            msg = traceback.format_exc()
-            await self.queue.put({"type": "error", "message": msg})
+            await self.queue.put({"type": "error", "message": traceback.format_exc()})
 
     # ── Control ───────────────────────────────────────────────────────────────
 
@@ -69,19 +84,27 @@ class ChatBrowserAgent:
     def stop(self) -> None:
         if self._agent:
             self._agent.stop()
+        self._pending.put_nowait(None)  # unblock wait-loop
 
     def send(self, message: str) -> None:
-        """Inject a new instruction; auto-resumes if paused."""
-        if self._agent:
-            self._agent.add_new_task(message)
+        """
+        If agent is mid-task and paused: inject + resume.
+        If agent finished current task and waiting: queue as next task.
+        """
+        if self._agent and not self._run_task.done():
             if self._agent.state.paused:
+                # Mid-task, paused — inject directly
+                self._agent.add_new_task(f"{_SYSTEM_PREFIX}\n\n{message}")
                 self._agent.resume()
+            else:
+                # Possibly mid-task or waiting — put in pending queue
+                self._pending.put_nowait(message)
 
     @property
     def is_running(self) -> bool:
         return self._run_task is not None and not self._run_task.done()
 
-    # ── Callback ──────────────────────────────────────────────────────────────
+    # ── Callbacks ─────────────────────────────────────────────────────────────
 
     async def _on_step(self, state, output, step_num: int) -> None:
         try:
@@ -97,3 +120,7 @@ class ChatBrowserAgent:
             "goal":   goal,
             "action": action_name,
         })
+
+    async def _on_done(self, history) -> None:
+        result = history.final_result() if history else ""
+        await self.queue.put({"type": "done", "result": result or ""})
