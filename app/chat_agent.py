@@ -125,8 +125,8 @@ class ChatBrowserAgent:
         if result:
             self._history.append({"role": "assistant", "content": result})
         await self.queue.put({"type": "done", "result": result or ""})
-        # Keep the browser alive: inject a hold task, then pause.
-        # When the user sends the next message, add_new_task + resume() will continue.
-        self._agent.add_new_task("__hold__")
+        # Pause here (inside run()) to keep the browser alive.
+        # When the user sends the next message, add_new_task + resume() will continue
+        # in the same run() context with full history intact.
         self.waiting = True
         self._agent.pause()
