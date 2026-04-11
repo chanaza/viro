@@ -19,7 +19,6 @@ class ChatBrowserAgent:
     def __init__(self):
         self._agent:    Agent | None        = None
         self._run_task: asyncio.Task | None = None
-        self._pending:  asyncio.Queue       = asyncio.Queue()  # incoming user messages
         self.queue:     asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
         self._history:  list[dict]          = []               # [{role, content}, ...]
         self.waiting:   bool                = False            # between tasks, ready for next
@@ -68,18 +67,6 @@ class ChatBrowserAgent:
     async def _run_loop(self) -> None:
         try:
             await self._agent.run()
-            while True:
-                self.waiting = True
-                await self.queue.put({"type": "waiting"})
-                next_msg = await asyncio.wait_for(self._pending.get(), timeout=300)
-                self.waiting = False
-                if next_msg is None:
-                    break
-                self._history.append({"role": "user", "content": next_msg})
-                self._agent.add_new_task(next_msg)
-                await self._agent.run()
-        except asyncio.TimeoutError:
-            await self.queue.put({"type": "stopped"})
         except asyncio.CancelledError:
             await self.queue.put({"type": "stopped"})
         except Exception:
@@ -101,16 +88,16 @@ class ChatBrowserAgent:
     def stop(self) -> None:
         if self._agent:
             self._agent.stop()
-        self._pending.put_nowait(None)
+            if self._agent.state.paused:
+                self._agent.resume()  # unblock so run() can exit
 
     def send(self, message: str) -> None:
         if self._agent and not self._run_task.done():
+            self.waiting = False
+            self._history.append({"role": "user", "content": message})
+            self._agent.add_new_task(message)
             if self._agent.state.paused:
-                self._history.append({"role": "user", "content": message})
-                self._agent.add_new_task(message)
                 self._agent.resume()
-            else:
-                self._pending.put_nowait(message)
 
     @property
     def is_running(self) -> bool:
@@ -138,3 +125,8 @@ class ChatBrowserAgent:
         if result:
             self._history.append({"role": "assistant", "content": result})
         await self.queue.put({"type": "done", "result": result or ""})
+        # Keep the browser alive: inject a hold task, then pause.
+        # When the user sends the next message, add_new_task + resume() will continue.
+        self._agent.add_new_task("__hold__")
+        self.waiting = True
+        self._agent.pause()
