@@ -6,7 +6,7 @@ from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
 from browser_use.llm.google.chat import ChatGoogle
 
-_SYSTEM_PREFIX = (
+_SYSTEM = (
     "You are a helpful browser assistant. "
     "Use Google (engine='google') for any web searches — never DuckDuckGo. "
     "Language rule: if the user's message contains any Hebrew characters, your final answer must be in Hebrew. Otherwise respond in the user's language."
@@ -21,6 +21,7 @@ class ChatBrowserAgent:
         self._run_task: asyncio.Task | None = None
         self._pending:  asyncio.Queue       = asyncio.Queue()  # incoming user messages
         self.queue:     asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
+        self._history:  list[dict]          = []               # [{role, content}, ...]
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -40,8 +41,9 @@ class ChatBrowserAgent:
             window_position=ViewportSize(width=960, height=0),
         )
 
+        self._history.append({"role": "user", "content": task})
         self._agent = Agent(
-            task=f"{_SYSTEM_PREFIX}\n\n{task}",
+            task=self._build_task(task),
             llm=llm,
             browser_profile=browser_profile,
             register_new_step_callback=self._on_step,
@@ -49,17 +51,29 @@ class ChatBrowserAgent:
         )
         self._run_task = asyncio.create_task(self._run_loop())
 
+    def _build_task(self, current_msg: str) -> str:
+        """Builds the full task string: system + conversation history + current message."""
+        parts = [_SYSTEM]
+        prior = self._history[:-1]  # all turns before the current one
+        if prior:
+            parts.append("\n--- Conversation so far ---")
+            for turn in prior:
+                label = "User" if turn["role"] == "user" else "Assistant"
+                parts.append(f"{label}: {turn['content']}")
+            parts.append("--- End of conversation ---\n")
+        parts.append(f"User: {current_msg}")
+        return "\n".join(parts)
+
     async def _run_loop(self) -> None:
-        """Runs the agent continuously: after each done(), waits for the next message."""
         try:
             await self._agent.run()
-            # After first task completes, enter wait-loop for follow-up messages
             while True:
                 await self.queue.put({"type": "waiting"})
                 next_msg = await asyncio.wait_for(self._pending.get(), timeout=300)
-                if next_msg is None:  # stop signal
+                if next_msg is None:
                     break
-                self._agent.add_new_task(next_msg)
+                self._history.append({"role": "user", "content": next_msg})
+                self._agent.add_new_task(self._build_task(next_msg))
                 await self._agent.run()
         except asyncio.TimeoutError:
             await self.queue.put({"type": "stopped"})
@@ -84,20 +98,15 @@ class ChatBrowserAgent:
     def stop(self) -> None:
         if self._agent:
             self._agent.stop()
-        self._pending.put_nowait(None)  # unblock wait-loop
+        self._pending.put_nowait(None)
 
     def send(self, message: str) -> None:
-        """
-        If agent is mid-task and paused: inject + resume.
-        If agent finished current task and waiting: queue as next task.
-        """
         if self._agent and not self._run_task.done():
             if self._agent.state.paused:
-                # Mid-task, paused — inject directly
-                self._agent.add_new_task(message)
+                self._history.append({"role": "user", "content": message})
+                self._agent.add_new_task(self._build_task(message))
                 self._agent.resume()
             else:
-                # Possibly mid-task or waiting — put in pending queue
                 self._pending.put_nowait(message)
 
     @property
@@ -123,4 +132,6 @@ class ChatBrowserAgent:
 
     async def _on_done(self, history) -> None:
         result = history.final_result() if history else ""
+        if result:
+            self._history.append({"role": "assistant", "content": result})
         await self.queue.put({"type": "done", "result": result or ""})
