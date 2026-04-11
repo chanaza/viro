@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browser Agent</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f0f2f5; height: 100vh; display: flex; flex-direction: column; }
+
+  header { background: #1a1a2e; color: #fff; padding: 12px 20px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1rem; font-weight: 600; flex: 1; }
+  #status-dot { width: 10px; height: 10px; border-radius: 50%; background: #555; flex-shrink: 0; }
+  #status-dot.idle    { background: #6c757d; }
+  #status-dot.running { background: #28a745; animation: pulse 1s infinite; }
+  #status-dot.paused  { background: #ffc107; }
+  #status-dot.done    { background: #17a2b8; }
+  #status-dot.error   { background: #dc3545; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+  #status-label { font-size: 0.75rem; color: #aaa; }
+
+  #chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .msg { max-width: 75%; padding: 10px 14px; border-radius: 12px; line-height: 1.5; font-size: 0.9rem; word-break: break-word; }
+  .msg.user  { align-self: flex-start; background: #0d6efd; color: #fff; border-bottom-right-radius: 4px; }
+  .msg.step  { align-self: flex-end; background: #fff; color: #333; border: 1px solid #e0e0e0; border-bottom-left-radius: 4px; }
+  .msg.done  { align-self: flex-end; background: #d1e7dd; color: #0a3622; border: 1px solid #badbcc; border-bottom-left-radius: 4px; }
+  .msg.error { align-self: flex-end; background: #f8d7da; color: #842029; border: 1px solid #f5c2c7; border-bottom-left-radius: 4px; }
+  .msg .step-num { font-size: 0.7rem; color: #999; margin-bottom: 3px; }
+  .msg .action-tag { display: inline-block; font-size: 0.7rem; background: #e9ecef; color: #495057; padding: 1px 6px; border-radius: 10px; margin-top: 4px; }
+
+  footer { background: #fff; border-top: 1px solid #ddd; padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+  #controls { display: flex; gap: 8px; }
+  #controls button { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+  #btn-pause  { background: #ffc107; color: #000; }
+  #btn-resume { background: #28a745; color: #fff; }
+  #btn-stop   { background: #dc3545; color: #fff; }
+  #controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+  #input-row { display: flex; gap: 8px; }
+  #task-input { flex: 1; padding: 9px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 0.9rem; resize: none; }
+  #btn-send { padding: 9px 18px; background: #0d6efd; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
+  #btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<header>
+  <div id="status-dot" class="idle"></div>
+  <h1>Browser Agent</h1>
+  <span id="status-label">מוכן</span>
+</header>
+
+<div id="chat"></div>
+
+<footer>
+  <div id="controls">
+    <button id="btn-pause"  onclick="doPause()"  disabled>השהה</button>
+    <button id="btn-resume" onclick="doResume()" disabled>המשך</button>
+    <button id="btn-stop"   onclick="doStop()"   disabled>עצור</button>
+  </div>
+  <div id="input-row">
+    <textarea id="task-input" rows="2" placeholder="תאר משימה... (Enter לשליחה)"></textarea>
+    <button id="btn-send" onclick="doSend()">שלח</button>
+  </div>
+</footer>
+
+<script>
+  let state = 'idle'; // idle | running | paused | done
+  let es = null;
+
+  const chat      = document.getElementById('chat');
+  const input     = document.getElementById('task-input');
+  const btnSend   = document.getElementById('btn-send');
+  const btnPause  = document.getElementById('btn-pause');
+  const btnResume = document.getElementById('btn-resume');
+  const btnStop   = document.getElementById('btn-stop');
+  const dot       = document.getElementById('status-dot');
+  const label     = document.getElementById('status-label');
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+  });
+
+  function setState(s) {
+    state = s;
+    dot.className = s;
+    const labels = { idle: 'מוכן', running: 'פועל', paused: 'מושהה', done: 'סיים', error: 'שגיאה' };
+    label.textContent = labels[s] || s;
+    btnPause.disabled  = s !== 'running';
+    btnResume.disabled = s !== 'paused';
+    btnStop.disabled   = s === 'idle' || s === 'done';
+    btnSend.textContent = s === 'idle' || s === 'done' ? 'שלח' : 'הוסף הוראה';
+  }
+
+  function addMsg(cls, html) {
+    const d = document.createElement('div');
+    d.className = `msg ${cls}`;
+    d.innerHTML = html;
+    chat.appendChild(d);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  async function post(path, body) {
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: r.statusText }));
+      throw new Error(err.detail || r.statusText);
+    }
+    return r.json();
+  }
+
+  function startSSE() {
+    if (es) es.close();
+    es = new EventSource('/stream');
+    es.onmessage = e => {
+      const ev = JSON.parse(e.data);
+      if (ev.type === 'ping') return;
+      if (ev.type === 'step') {
+        addMsg('step',
+          `<div class="step-num">שלב ${ev.step}</div>` +
+          `<div>${ev.goal || ''}</div>` +
+          (ev.action ? `<span class="action-tag">${ev.action}</span>` : '')
+        );
+      } else if (ev.type === 'paused') {
+        setState('paused');
+      } else if (ev.type === 'resumed') {
+        setState('running');
+      } else if (ev.type === 'done') {
+        addMsg('done', `<strong>סיים:</strong> ${ev.result || '(ללא תוצאה)'}`);
+        setState('done');
+        es.close();
+      } else if (ev.type === 'stopped') {
+        addMsg('step', 'הסוכן עצר.');
+        setState('idle');
+        es.close();
+      } else if (ev.type === 'error') {
+        addMsg('error', `שגיאה: ${ev.message}`);
+        setState('error');
+        es.close();
+      }
+    };
+    es.onerror = () => {
+      if (state === 'running' || state === 'paused') {
+        setTimeout(startSSE, 2000); // reconnect
+      }
+    };
+  }
+
+  async function doSend() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    addMsg('user', text);
+
+    try {
+      if (state === 'idle' || state === 'done') {
+        await post('/start', { task: text });
+        setState('running');
+        startSSE();
+      } else {
+        await post('/send', { message: text });
+      }
+    } catch (e) {
+      addMsg('error', e.message);
+    }
+  }
+
+  async function doPause() {
+    try { await post('/pause'); setState('paused'); } catch(e) { addMsg('error', e.message); }
+  }
+  async function doResume() {
+    try { await post('/resume'); setState('running'); } catch(e) { addMsg('error', e.message); }
+  }
+  async function doStop() {
+    try { await post('/stop'); } catch(e) { addMsg('error', e.message); }
+  }
+
+  setState('idle');
+</script>
+</body>
+</html>
