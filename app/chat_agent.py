@@ -9,7 +9,7 @@ from browser_use.llm.google.chat import ChatGoogle
 _SYSTEM_PREFIX = (
     "You are a helpful browser assistant. "
     "Use Google (engine='google') for any web searches — never DuckDuckGo. "
-    "Always reply to the user in the same language they used in their request."
+    "Language rule: if the user's message contains any Hebrew characters, your final answer must be in Hebrew. Otherwise respond in the user's language."
 )
 
 
@@ -59,7 +59,7 @@ class ChatBrowserAgent:
                 next_msg = await asyncio.wait_for(self._pending.get(), timeout=300)
                 if next_msg is None:  # stop signal
                     break
-                self._agent.add_new_task(f"{_SYSTEM_PREFIX}\n\n{next_msg}")
+                self._agent.add_new_task(next_msg)
                 await self._agent.run()
         except asyncio.TimeoutError:
             await self.queue.put({"type": "stopped"})
@@ -94,7 +94,7 @@ class ChatBrowserAgent:
         if self._agent and not self._run_task.done():
             if self._agent.state.paused:
                 # Mid-task, paused — inject directly
-                self._agent.add_new_task(f"{_SYSTEM_PREFIX}\n\n{message}")
+                self._agent.add_new_task(message)
                 self._agent.resume()
             else:
                 # Possibly mid-task or waiting — put in pending queue
