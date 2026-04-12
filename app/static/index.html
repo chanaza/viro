@@ -4,59 +4,311 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Browser Agent</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><circle cx='16' cy='16' r='9' stroke='white' stroke-width='2' fill='none'/><circle cx='16' cy='16' r='3' fill='white'/><line x1='16' y1='7' x2='16' y2='11' stroke='white' stroke-width='2'/><line x1='16' y1='21' x2='16' y2='25' stroke='white' stroke-width='2'/><line x1='7' y1='16' x2='11' y2='16' stroke='white' stroke-width='2'/><line x1='21' y1='16' x2='25' y2='16' stroke='white' stroke-width='2'/></svg>">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #f0f2f5; height: 100vh; display: flex; flex-direction: column; }
 
-  header { background: #1a1a2e; color: #fff; padding: 12px 20px; display: flex; align-items: center; gap: 12px; }
-  header h1 { font-size: 1rem; font-weight: 600; flex: 1; }
-  #status-dot { width: 10px; height: 10px; border-radius: 50%; background: #555; flex-shrink: 0; }
-  #status-dot.idle    { background: #6c757d; }
-  #status-dot.running { background: #28a745; animation: pulse 1s infinite; }
-  #status-dot.paused  { background: #ffc107; }
-  #status-dot.done    { background: #17a2b8; }
-  #status-dot.error   { background: #dc3545; }
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
-  #status-label { font-size: 0.75rem; color: #aaa; }
+  :root {
+    --bg:        #f9fafb;
+    --surface:   #ffffff;
+    --border:    #e2e8f0;
+    --text:      #1e293b;
+    --muted:     #64748b;
+    --accent:    #4f46e5;
+    --accent-lt: #eef2ff;
+    --green:     #16a34a;
+    --green-lt:  #dcfce7;
+    --red:       #dc2626;
+    --red-lt:    #fee2e2;
+    --amber:     #d97706;
+  }
 
-  #chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: var(--text);
+  }
 
-  .msg { max-width: 90%; padding: 10px 14px; border-radius: 12px; line-height: 1.5; font-size: 0.9rem; word-break: break-word; }
-  .msg.user  { align-self: flex-start; background: #0d6efd; color: #fff; border-bottom-right-radius: 4px; }
-  .msg.step  { align-self: flex-end; background: #fff; color: #333; border: 1px solid #e0e0e0; border-bottom-left-radius: 4px; }
-  .msg.done  { align-self: flex-end; background: #d1e7dd; color: #0a3622; border: 1px solid #badbcc; border-bottom-left-radius: 4px; }
-  .msg.error { align-self: flex-end; background: #f8d7da; color: #842029; border: 1px solid #f5c2c7; border-bottom-left-radius: 4px; }
-  .msg .step-num { font-size: 0.7rem; color: #999; margin-bottom: 3px; }
-  .msg .action-tag { display: inline-block; font-size: 0.7rem; background: #e9ecef; color: #495057; padding: 1px 6px; border-radius: 10px; margin-top: 4px; }
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .logo {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo svg { width: 18px; height: 18px; }
+  header h1 { font-size: 0.95rem; font-weight: 700; flex: 1; letter-spacing: -0.01em; }
+  .status-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  #status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #94a3b8;
+    transition: background 0.3s;
+  }
+  #status-dot.idle    { background: #94a3b8; }
+  #status-dot.running { background: #22c55e; animation: pulse 1.2s infinite; }
+  #status-dot.paused  { background: var(--amber); }
+  #status-dot.done    { background: var(--accent); }
+  #status-dot.error   { background: var(--red); }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
 
-  footer { background: #fff; border-top: 1px solid #ddd; padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
-  #controls { display: flex; gap: 8px; }
-  #controls button { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
-  #btn-pause  { background: #ffc107; color: #000; }
-  #btn-resume { background: #28a745; color: #fff; }
-  #btn-stop   { background: #dc3545; color: #fff; }
-  #controls button:disabled { opacity: 0.4; cursor: not-allowed; }
-  #input-row { display: flex; gap: 8px; }
-  #task-input { flex: 1; padding: 9px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 0.9rem; resize: none; }
-  #btn-send { padding: 9px 18px; background: #0d6efd; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
+  /* ── Chat ── */
+  #chat {
+    flex: 1; overflow-y: auto;
+    padding: 16px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    scroll-behavior: smooth;
+  }
+
+  /* ── User bubble ── */
+  .msg-user {
+    align-self: flex-start;
+    background: var(--accent-lt);
+    color: #312e81;
+    border: 1px solid #c7d2fe;
+    padding: 10px 14px;
+    border-radius: 16px 16px 16px 4px;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    max-width: 88%;
+    word-break: break-word;
+  }
+
+  /* ── Answer bubble ── */
+  .msg-answer {
+    align-self: flex-end;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #d1fae5;
+    padding: 12px 14px;
+    border-radius: 16px 16px 4px 16px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    max-width: 88%;
+    word-break: break-word;
+  }
+  .msg-answer .answer-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #16a34a;
+    margin-bottom: 5px;
+  }
+
+  /* ── Markdown content inside answer bubble ── */
+  .msg-answer .md h1,.msg-answer .md h2,.msg-answer .md h3 {
+    font-weight: 700; margin: 10px 0 4px; color: #14532d;
+  }
+  .msg-answer .md h1 { font-size: 1rem; }
+  .msg-answer .md h2 { font-size: 0.93rem; }
+  .msg-answer .md h3 { font-size: 0.88rem; }
+  .msg-answer .md p  { margin: 0 0 6px; }
+  .msg-answer .md p:last-child { margin-bottom: 0; }
+  .msg-answer .md ul,.msg-answer .md ol { padding-right: 18px; margin: 4px 0 6px; }
+  .msg-answer .md li { margin-bottom: 3px; }
+  .msg-answer .md code {
+    background: #dcfce7; border-radius: 4px;
+    padding: 1px 5px; font-size: 0.82rem; font-family: monospace;
+  }
+  .msg-answer .md pre {
+    background: #dcfce7; border-radius: 8px;
+    padding: 10px 12px; overflow-x: auto; margin: 6px 0;
+  }
+  .msg-answer .md pre code { background: none; padding: 0; }
+  .msg-answer .md blockquote {
+    border-right: 3px solid #86efac; margin: 6px 0;
+    padding: 4px 10px; color: #166534; opacity: 0.85;
+  }
+  .msg-answer .md strong { font-weight: 700; }
+  .msg-answer .md hr { border: none; border-top: 1px solid #d1fae5; margin: 8px 0; }
+  .msg-answer .md a { color: #15803d; text-decoration: underline; }
+  .msg-answer .md table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 0.83rem; }
+  .msg-answer .md th,.msg-answer .md td { border: 1px solid #d1fae5; padding: 4px 8px; white-space: nowrap; }
+  .msg-answer .md th { background: #dcfce7; font-weight: 600; }
+  .msg-answer .md table { display: block; overflow-x: auto; }
+
+  /* ── Error bubble ── */
+  .msg-error {
+    align-self: flex-end;
+    background: var(--red-lt);
+    color: #7f1d1d;
+    border: 1px solid #fecaca;
+    padding: 10px 14px;
+    border-radius: 16px 16px 4px 16px;
+    font-size: 0.85rem;
+    max-width: 88%;
+  }
+
+  /* ── Steps group (collapsible) ── */
+  .steps-group {
+    align-self: flex-end;
+    width: 100%;
+    max-width: 88%;
+  }
+  .steps-toggle {
+    display: flex; align-items: center; gap: 7px;
+    background: none; border: none; cursor: pointer;
+    color: var(--muted);
+    font-size: 0.75rem;
+    padding: 3px 0;
+    width: 100%;
+    text-align: right;
+  }
+  .steps-toggle .chevron {
+    display: inline-block;
+    transition: transform 0.2s;
+    font-style: normal;
+  }
+  .steps-toggle.open .chevron { transform: rotate(90deg); }
+  .steps-toggle .pill {
+    background: var(--border);
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+
+  .steps-body { display: none; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .steps-body.open { display: flex; }
+
+  .step-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .step-num-badge {
+    background: var(--accent-lt);
+    color: var(--accent);
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-content { flex: 1; min-width: 0; }
+  .step-goal { font-size: 0.82rem; color: var(--text); line-height: 1.4; }
+  .step-action {
+    display: inline-block; margin-top: 4px;
+    font-size: 0.68rem;
+    background: var(--bg);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1px 7px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    flex-shrink: 0;
+  }
+  #controls { display: flex; gap: 6px; }
+  #controls button {
+    padding: 5px 13px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--surface);
+    color: var(--text);
+    transition: background 0.15s, opacity 0.15s;
+  }
+  #btn-pause:not(:disabled):hover  { background: var(--bg); }
+  #btn-resume:not(:disabled):hover { background: var(--accent-lt); border-color: #c7d2fe; color: var(--accent); }
+  #btn-stop:not(:disabled):hover   { background: #fff1f2; border-color: #fecdd3; color: #be123c; }
+  #controls button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  #input-row { display: flex; gap: 8px; align-items: flex-end; }
+  #task-input {
+    flex: 1; padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+  #task-input:focus { border-color: var(--accent); background: var(--surface); }
+  #task-input::placeholder { font-family: inherit; color: #94a3b8; }
+  #btn-send {
+    padding: 9px 16px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  #btn-send:hover { background: #4338ca; }
   #btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 </head>
 <body>
 
 <header>
-  <div id="status-dot" class="idle"></div>
+  <div class="logo">
+    <!-- crosshair + spark: agent that targets and acts -->
+    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="9" cy="9" r="5.5" stroke="white" stroke-width="1.5"/>
+      <circle cx="9" cy="9" r="1.8" fill="white"/>
+      <line x1="9" y1="1" x2="9" y2="4.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="9" y1="13.5" x2="9" y2="17" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="1" y1="9" x2="4.5" y2="9" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="13.5" y1="9" x2="17" y2="9" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M15 13l1.5 1.5-.6.25.25 1.25-1.1-.9-.5.9-.2-1.35-.75-.2 1.35-1.2z" fill="white"/>
+    </svg>
+  </div>
   <h1>Browser Agent</h1>
-  <span id="status-label">מוכן</span>
+  <div class="status-badge">
+    <div id="status-dot" class="idle"></div>
+    <span id="status-label">מוכן</span>
+  </div>
 </header>
 
 <div id="chat"></div>
 
 <footer>
   <div id="controls">
-    <button id="btn-pause"  onclick="doPause()"  disabled>השהה</button>
-    <button id="btn-resume" onclick="doResume()" disabled>המשך</button>
-    <button id="btn-stop"   onclick="doStop()"   disabled>עצור</button>
+    <button id="btn-pause"  onclick="doPause()"  disabled>⏸ השהה</button>
+    <button id="btn-resume" onclick="doResume()" disabled>▶ המשך</button>
+    <button id="btn-stop"   onclick="doStop()"   disabled>⏹ עצור</button>
   </div>
   <div id="input-row">
     <textarea id="task-input" rows="2" placeholder="תאר משימה... (Enter לשליחה)"></textarea>
@@ -65,8 +317,11 @@
 </footer>
 
 <script>
-  let state = 'idle'; // idle | running | paused | done
+  let state = 'idle';
   let es = null;
+
+  // Current run's step group
+  let stepsGroup = null;   // { toggle, body, count }
 
   const chat      = document.getElementById('chat');
   const input     = document.getElementById('task-input');
@@ -84,7 +339,7 @@
   function setState(s) {
     state = s;
     dot.className = s;
-    const labels = { idle: 'מוכן', running: 'פועל', paused: 'מושהה', done: 'סיים', error: 'שגיאה' };
+    const labels = { idle: 'מוכן', running: 'פועל', paused: 'מושהה', done: 'הסתיים', error: 'שגיאה' };
     label.textContent = labels[s] || s;
     btnPause.disabled  = s !== 'running';
     btnResume.disabled = s !== 'paused';
@@ -92,11 +347,76 @@
     btnSend.textContent = s === 'idle' || s === 'done' ? 'שלח' : 'הוסף הוראה';
   }
 
-  function addMsg(cls, html) {
+  function addUserMsg(text) {
     const d = document.createElement('div');
-    d.className = `msg ${cls}`;
-    d.innerHTML = html;
+    d.className = 'msg-user';
+    d.textContent = text;
     chat.appendChild(d);
+    scrollChat();
+  }
+
+  function addAnswerMsg(text) {
+    const d = document.createElement('div');
+    d.className = 'msg-answer';
+    const body = text
+      ? `<div class="md">${marked.parse(text)}</div>`
+      : '<div>(ללא תוצאה)</div>';
+    d.innerHTML = `<div class="answer-label">תשובה</div>${body}`;
+    chat.appendChild(d);
+    scrollChat();
+  }
+
+  function addErrorMsg(text) {
+    const d = document.createElement('div');
+    d.className = 'msg-error';
+    d.textContent = text;
+    chat.appendChild(d);
+    scrollChat();
+  }
+
+  function ensureStepsGroup() {
+    if (stepsGroup) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'steps-group';
+
+    const toggle = document.createElement('button');
+    toggle.className = 'steps-toggle';
+    toggle.innerHTML = `<i class="chevron">›</i><span class="pill">0</span><span>שלבי עבודה</span>`;
+    toggle.onclick = () => {
+      toggle.classList.toggle('open');
+      body.classList.toggle('open');
+    };
+
+    const body = document.createElement('div');
+    body.className = 'steps-body';
+
+    wrapper.appendChild(toggle);
+    wrapper.appendChild(body);
+    chat.appendChild(wrapper);
+
+    stepsGroup = { toggle, body, count: 0 };
+    scrollChat();
+  }
+
+  function addStep(stepNum, goal, action) {
+    ensureStepsGroup();
+    stepsGroup.count++;
+    stepsGroup.toggle.querySelector('.pill').textContent = stepsGroup.count;
+
+    const item = document.createElement('div');
+    item.className = 'step-item';
+    item.innerHTML =
+      `<span class="step-num-badge">${stepNum}</span>` +
+      `<div class="step-content">` +
+        `<div class="step-goal">${goal || ''}</div>` +
+        (action ? `<span class="step-action">${action}</span>` : '') +
+      `</div>`;
+    stepsGroup.body.appendChild(item);
+    scrollChat();
+  }
+
+  function scrollChat() {
     chat.scrollTop = chat.scrollHeight;
   }
 
@@ -115,37 +435,34 @@
 
   function startSSE() {
     if (es) es.close();
+    stepsGroup = null;  // new run = new steps group
     es = new EventSource('/stream');
     es.onmessage = e => {
       const ev = JSON.parse(e.data);
       if (ev.type === 'ping') return;
       if (ev.type === 'step') {
-        addMsg('step',
-          `<div class="step-num">שלב ${ev.step}</div>` +
-          `<div>${ev.goal || ''}</div>` +
-          (ev.action ? `<span class="action-tag">${ev.action}</span>` : '')
-        );
+        addStep(ev.step, ev.goal, ev.action);
       } else if (ev.type === 'paused') {
         setState('paused');
       } else if (ev.type === 'resumed') {
         setState('running');
       } else if (ev.type === 'done') {
-        addMsg('done', `<strong>סיים:</strong> ${ev.result || '(ללא תוצאה)'}`);
+        addAnswerMsg(ev.result);
         setState('done');
         es.close();
       } else if (ev.type === 'stopped') {
-        addMsg('step', 'הסוכן עצר.');
+        addErrorMsg('הסוכן עצר.');
         setState('idle');
         es.close();
       } else if (ev.type === 'error') {
-        addMsg('error', `שגיאה: ${ev.message}`);
+        addErrorMsg(`שגיאה: ${ev.message}`);
         setState('error');
         es.close();
       }
     };
     es.onerror = () => {
       if (state === 'running' || state === 'paused') {
-        setTimeout(startSSE, 2000); // reconnect
+        setTimeout(startSSE, 2000);
       }
     };
   }
@@ -154,7 +471,7 @@
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
-    addMsg('user', text);
+    addUserMsg(text);
 
     try {
       if (state === 'idle' || state === 'done') {
@@ -165,19 +482,28 @@
         await post('/send', { message: text });
       }
     } catch (e) {
-      addMsg('error', e.message);
+      addErrorMsg(e.message);
     }
   }
 
   async function doPause() {
-    try { await post('/pause'); setState('paused'); } catch(e) { addMsg('error', e.message); }
+    try { await post('/pause'); setState('paused'); } catch(e) { addErrorMsg(e.message); }
   }
   async function doResume() {
-    try { await post('/resume'); setState('running'); } catch(e) { addMsg('error', e.message); }
+    const text = input.value.trim();
+    if (text) {
+      // treat as send — which also resumes internally
+      doSend();
+    } else {
+      try { await post('/resume'); setState('running'); } catch(e) { addErrorMsg(e.message); }
+    }
   }
   async function doStop() {
-    try { await post('/stop'); } catch(e) { addMsg('error', e.message); }
+    btnStop.disabled = true;
+    try { await post('/stop'); } catch(e) { addErrorMsg(e.message); btnStop.disabled = false; }
   }
+
+  marked.use({ gfm: true, breaks: true });
 
   setState('idle');
 </script>

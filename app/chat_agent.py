@@ -1,16 +1,28 @@
 import asyncio
+import ctypes
 import os
 import sys
+import traceback
 
 from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
 from browser_use.llm.google.chat import ChatGoogle
+from browser_use.llm.messages import UserMessage
 
 _SYSTEM = (
     "You are a helpful browser assistant. "
     "Use Google (engine='google') for any web searches — never DuckDuckGo. "
     "Language rule: if the user's message contains any Hebrew characters, your final answer must be in Hebrew. Otherwise respond in the user's language."
 )
+
+_ROUTER_PROMPT = """\
+Decide if answering the following request requires browsing the web or not.
+Reply with exactly one word: BROWSE or ANSWER.
+- BROWSE: needs live web data, searching, visiting URLs, or interacting with websites.
+- ANSWER: can be answered from general knowledge, conversation context, or is conversational (greetings, follow-up questions on prior results, etc.).
+
+Request: {task}
+"""
 
 
 class ChatBrowserAgent:
@@ -42,14 +54,33 @@ class ChatBrowserAgent:
 
     async def start(self, task: str) -> None:
         self._history.append({"role": "user", "content": task})
-        self._agent = Agent(
-            task=self._build_task(task),
-            llm=self._llm,
-            browser_profile=self._browser_profile,
-            register_new_step_callback=self._on_step,
-            register_done_callback=self._on_done,
-        )
-        self._run_task = asyncio.create_task(self._run_loop())
+        if await self._needs_browser(task):
+            if sys.platform == "win32":
+                ctypes.windll.user32.AllowSetForegroundWindow(-1)
+            self._agent = Agent(
+                task=self._build_task(task),
+                llm=self._llm,
+                browser_profile=self._browser_profile,
+                register_new_step_callback=self._on_step,
+                register_done_callback=self._on_done,
+            )
+            self._run_task = asyncio.create_task(self._run_loop())
+        else:
+            self._run_task = asyncio.create_task(self._answer_directly(task))
+
+    async def _needs_browser(self, task: str) -> bool:
+        prompt = _ROUTER_PROMPT.format(task=self._build_task(task))
+        response = await self._llm.ainvoke([UserMessage(content=prompt)])
+        return "BROWSE" in response.completion.upper()
+
+    async def _answer_directly(self, task: str) -> None:
+        try:
+            response = await self._llm.ainvoke([UserMessage(content=self._build_task(task))])
+            result = response.completion
+            self._history.append({"role": "assistant", "content": result})
+            await self.queue.put({"type": "done", "result": result})
+        except Exception:
+            await self.queue.put({"type": "error", "message": traceback.format_exc()})
 
     def _build_task(self, current_msg: str) -> str:
         """Builds the full task string: system + conversation history + current message."""
@@ -70,8 +101,12 @@ class ChatBrowserAgent:
         except asyncio.CancelledError:
             await self.queue.put({"type": "stopped"})
         except Exception:
-            import traceback
             await self.queue.put({"type": "error", "message": traceback.format_exc()})
+        finally:
+            try:
+                await self._agent.close()
+            except Exception:
+                pass
 
     # ── Control ───────────────────────────────────────────────────────────────
 
