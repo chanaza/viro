@@ -40,11 +40,9 @@ async def index():
 async def start(body: StartRequest):
     global _agent
     if _agent and _agent.is_running:
-        if _agent.waiting:
-            _agent.send(body.task)
-            return {"status": "sent"}
         raise HTTPException(400, "Agent is already running. Stop it first.")
-    _agent = ChatBrowserAgent()
+    if not _agent:
+        _agent = ChatBrowserAgent()
     await _agent.start(body.task)
     return {"status": "started"}
 

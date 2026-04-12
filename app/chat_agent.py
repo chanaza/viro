@@ -17,35 +17,35 @@ class ChatBrowserAgent:
     """Browser-use agent with conversational memory across multiple tasks."""
 
     def __init__(self):
-        self._agent:    Agent | None        = None
-        self._run_task: asyncio.Task | None = None
-        self.queue:     asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
-        self._history:  list[dict]          = []               # [{role, content}, ...]
-        self.waiting:   bool                = False            # between tasks, ready for next
-
-    # ── Lifecycle ─────────────────────────────────────────────────────────────
-
-    async def start(self, task: str) -> None:
         if sys.platform == "win32":
             sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-        llm = ChatGoogle(
+        self._llm = ChatGoogle(
             model=os.getenv("GEMINI_MODEL"),
             project=os.getenv("GOOGLE_CLOUD_PROJECT"),
             location=os.getenv("LLM_LOCATION"),
             vertexai=True,
         )
-        browser_profile = BrowserProfile(
+        bw = int(os.getenv("BROWSER_W", 1100))
+        bh = int(os.getenv("BROWSER_H", 900))
+        self._browser_profile = BrowserProfile(
             args=["--ignore-certificate-errors"],
-            window_size=ViewportSize(width=960, height=1040),
-            window_position=ViewportSize(width=960, height=0),
+            window_size=ViewportSize(width=bw, height=bh),
+            window_position=ViewportSize(width=0, height=0),
         )
+        self._agent:    Agent | None        = None
+        self._run_task: asyncio.Task | None = None
+        self.queue:     asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
+        self._history:  list[dict]          = []               # [{role, content}, ...]
 
+    # ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    async def start(self, task: str) -> None:
         self._history.append({"role": "user", "content": task})
         self._agent = Agent(
             task=self._build_task(task),
-            llm=llm,
-            browser_profile=browser_profile,
+            llm=self._llm,
+            browser_profile=self._browser_profile,
             register_new_step_callback=self._on_step,
             register_done_callback=self._on_done,
         )
@@ -93,7 +93,6 @@ class ChatBrowserAgent:
 
     def send(self, message: str) -> None:
         if self._agent and not self._run_task.done():
-            self.waiting = False
             self._history.append({"role": "user", "content": message})
             self._agent.add_new_task(message)
             if self._agent.state.paused:
@@ -125,8 +124,3 @@ class ChatBrowserAgent:
         if result:
             self._history.append({"role": "assistant", "content": result})
         await self.queue.put({"type": "done", "result": result or ""})
-        # Pause here (inside run()) to keep the browser alive.
-        # When the user sends the next message, add_new_task + resume() will continue
-        # in the same run() context with full history intact.
-        self.waiting = True
-        self._agent.pause()
