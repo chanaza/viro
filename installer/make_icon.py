@@ -1,23 +1,24 @@
-"""Generate viro.ico from the app's SVG logo."""
+"""Generate viro.ico — uses 4x supersampling for sharp, anti-aliased edges."""
 from PIL import Image, ImageDraw
 import os
 
+
 def make_icon(size):
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    SCALE = 4
+    s = size * SCALE
+    img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    s = size
 
     # Background rounded square
     r = s // 6
     d.rounded_rectangle([0, 0, s - 1, s - 1], radius=r, fill=(79, 70, 229, 255))
 
-    # Scale factor
     f = s / 32
+    lw = max(1, round(1.5 * f))
 
     # Crosshair circle
     cx, cy = 9 * f, 9 * f
     cr = 5.5 * f
-    lw = max(1, round(1.5 * f))
     d.ellipse([cx - cr, cy - cr, cx + cr, cy + cr], outline=(255, 255, 255, 255), width=lw)
 
     # Center dot
@@ -30,23 +31,19 @@ def make_icon(size):
     d.line([(1 * f, cy), (4.5 * f, cy)], fill=(255, 255, 255, 255), width=lw)
     d.line([(13.5 * f, cy), (17 * f, cy)], fill=(255, 255, 255, 255), width=lw)
 
-    # Spark (lightning bolt) bottom-right
+    # Spark bottom-right
     spark = [
-        (15 * f, 13 * f),
-        (16.5 * f, 14.5 * f),
-        (15.9 * f, 14.75 * f),
-        (16.15 * f, 16 * f),
-        (15.05 * f, 15.1 * f),
-        (14.55 * f, 16 * f),
-        (14.35 * f, 14.65 * f),
-        (13.6 * f, 14.45 * f),
+        (15 * f, 13 * f), (16.5 * f, 14.5 * f), (15.9 * f, 14.75 * f),
+        (16.15 * f, 16 * f), (15.05 * f, 15.1 * f), (14.55 * f, 16 * f),
+        (14.35 * f, 14.65 * f), (13.6 * f, 14.45 * f),
     ]
     d.polygon(spark, fill=(255, 255, 255, 255))
 
-    return img
+    # Downsample with LANCZOS for sharp anti-aliasing
+    return img.resize((size, size), Image.LANCZOS)
 
 
-sizes = [16, 32, 48, 64, 128, 256]
+sizes = [16, 24, 32, 48, 64, 128, 256]
 images = [make_icon(s) for s in sizes]
 
 out = os.path.join(os.path.dirname(__file__), "viro.ico")
