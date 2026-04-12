@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Browser Agent</title>
+<title>Viro</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><circle cx='16' cy='16' r='9' stroke='white' stroke-width='2' fill='none'/><circle cx='16' cy='16' r='3' fill='white'/><line x1='16' y1='7' x2='16' y2='11' stroke='white' stroke-width='2'/><line x1='16' y1='21' x2='16' y2='25' stroke='white' stroke-width='2'/><line x1='7' y1='16' x2='11' y2='16' stroke='white' stroke-width='2'/><line x1='21' y1='16' x2='25' y2='16' stroke='white' stroke-width='2'/></svg>">
 <style>
@@ -295,7 +295,7 @@
       <path d="M15 13l1.5 1.5-.6.25.25 1.25-1.1-.9-.5.9-.2-1.35-.75-.2 1.35-1.2z" fill="white"/>
     </svg>
   </div>
-  <h1>Browser Agent</h1>
+  <h1>Viro</h1>
   <div class="status-badge">
     <div id="status-dot" class="idle"></div>
     <span id="status-label">מוכן</span>
@@ -382,7 +382,7 @@
 
     const toggle = document.createElement('button');
     toggle.className = 'steps-toggle';
-    toggle.innerHTML = `<i class="chevron">›</i><span class="pill">0</span><span>שלבי עבודה</span>`;
+    toggle.innerHTML = `<i class="chevron">›</i><span class="pill">0</span><span>Steps</span>`;
     toggle.onclick = () => {
       toggle.classList.toggle('open');
       body.classList.toggle('open');

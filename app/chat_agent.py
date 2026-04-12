@@ -49,6 +49,7 @@ class ChatBrowserAgent:
             args=["--ignore-certificate-errors"],
             window_size=ViewportSize(width=bw, height=bh),
             window_position=ViewportSize(width=0, height=0),
+            stealth=True,
         )
         self._agent:    Agent | None        = None
         self._run_task: asyncio.Task | None = None
