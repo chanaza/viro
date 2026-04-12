@@ -6,8 +6,8 @@ import traceback
 
 from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
-from browser_use.llm.google.chat import ChatGoogle
 from browser_use.llm.messages import UserMessage
+from app.llm import create_llm
 
 _SYSTEM = (
     "You are a helpful browser assistant. "
@@ -32,12 +32,7 @@ class ChatBrowserAgent:
         if sys.platform == "win32":
             sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-        self._llm = ChatGoogle(
-            model=os.getenv("GEMINI_MODEL"),
-            project=os.getenv("GOOGLE_CLOUD_PROJECT"),
-            location=os.getenv("LLM_LOCATION"),
-            vertexai=True,
-        )
+        self._llm = create_llm()
         bw = int(os.getenv("BROWSER_W", 1100))
         bh = int(os.getenv("BROWSER_H", 900))
         self._browser_profile = BrowserProfile(
