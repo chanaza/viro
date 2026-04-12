@@ -1,13 +1,29 @@
-import asyncio
-import subprocess
+import os
 import sys
+
+# Derive install dir from the executable: viro-env/Scripts/python(w).exe -> ../..
+_scripts = os.path.dirname(os.path.abspath(sys.executable))   # .../viro-env/Scripts
+_venv    = os.path.dirname(_scripts)                           # .../viro-env
+_base    = os.path.dirname(_venv)                              # .../Viro  (install dir)
+if _base not in sys.path:
+    sys.path.insert(0, _base)
+
+_log_path = os.path.join(_base, "viro.log")
+_log_file = open(_log_path, "w", encoding="utf-8", buffering=1)
+sys.stdout = _log_file
+sys.stderr = _log_file
+
+import asyncio
+import logging
+import socket
+import subprocess
+import tempfile
 import threading
 import time
+import uvicorn
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-
-import uvicorn
 
 _PORT = 8000
 _URL  = f"http://127.0.0.1:{_PORT}"
@@ -20,7 +36,6 @@ _EDGE_CANDIDATES = [
 
 
 def _screen_size() -> tuple[int, int]:
-    """Returns screen dimensions in the same coordinate space Edge uses for --window-size/position."""
     try:
         out = subprocess.check_output([
             "powershell", "-NoProfile", "-Command",
@@ -31,25 +46,17 @@ def _screen_size() -> tuple[int, int]:
         w, h = map(int, out.split())
         return w, h
     except Exception:
-        return 1920, 1080  # safe fallback
+        return 1920, 1080
 
 
-def _open_app_window():
-    time.sleep(1.5)  # wait for uvicorn to bind
-
+def _open_app_window(server: uvicorn.Server) -> None:
+    time.sleep(1.5)
     sw, sh = _screen_size()
-    app_w = sw // 4          # chat panel = 25% of screen width
-    app_x = sw - app_w       # pinned to right edge
-
-    # Chrome windows have an ~8px invisible resize border outside the declared size.
-    # Setting browser_w = app_x + 8 means the visible browser content ends exactly
-    # where the visible app content begins — no gap, no overlap.
-    import os
+    app_w = sw // 4
+    app_x = sw - app_w
     os.environ["BROWSER_W"] = str(app_x + 8)
     os.environ["BROWSER_H"] = str(sh)
-
-    import tempfile, os as _os
-    profile_dir = _os.path.join(tempfile.gettempdir(), "browser-agent-app-profile")
+    profile_dir = os.path.join(tempfile.gettempdir(), "viro-app-profile")
     args = [
         f"--app={_URL}",
         f"--window-size={app_w},{sh}",
@@ -58,16 +65,68 @@ def _open_app_window():
         "--no-first-run",
         "--disable-extensions",
     ]
+    proc = None
     for exe in _EDGE_CANDIDATES:
         try:
-            subprocess.Popen([exe] + args)
-            return
+            proc = subprocess.Popen([exe] + args)
+            break
         except FileNotFoundError:
             continue
-    import webbrowser
-    webbrowser.open(_URL)
+    if proc is None:
+        import webbrowser
+        webbrowser.open(_URL)
+        return
+    # When the Edge window is closed, shut down the server too
+    proc.wait()
+    server.should_exit = True
+
+
+def _port_in_use(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("127.0.0.1", port)) == 0
 
 
 if __name__ == "__main__":
-    threading.Thread(target=_open_app_window, daemon=True).start()
-    uvicorn.run("app.server:app", host="127.0.0.1", port=_PORT)
+    try:
+        if _port_in_use(_PORT):
+            # Server already running — just open a new window (no watcher needed)
+            time.sleep(1.5)
+            sw, sh = _screen_size()
+            app_w = sw // 4
+            app_x = sw - app_w
+            profile_dir = os.path.join(tempfile.gettempdir(), "viro-app-profile")
+            args = [
+                f"--app={_URL}",
+                f"--window-size={app_w},{sh}",
+                f"--window-position={app_x},0",
+                f"--user-data-dir={profile_dir}",
+                "--no-first-run",
+                "--disable-extensions",
+            ]
+            for exe in _EDGE_CANDIDATES:
+                try:
+                    subprocess.Popen([exe] + args)
+                    break
+                except FileNotFoundError:
+                    continue
+        else:
+            config = uvicorn.Config(
+                "app.server:app",
+                host="127.0.0.1",
+                port=_PORT,
+                loop="asyncio",
+                log_config=None,
+            )
+            logging.basicConfig(
+                filename=_log_path,
+                level=logging.DEBUG,
+                format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+            )
+            server = uvicorn.Server(config)
+            threading.Thread(target=_open_app_window, args=(server,), daemon=True).start()
+            asyncio.run(server.serve())
+    except Exception:
+        import traceback
+        print("RUNTIME ERROR:", traceback.format_exc(), flush=True)
+        _log_file.flush()
+        sys.exit(1)

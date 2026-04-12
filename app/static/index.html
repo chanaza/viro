@@ -455,7 +455,7 @@
         setState('idle');
         es.close();
       } else if (ev.type === 'error') {
-        addErrorMsg(`שגיאה: ${ev.message}`);
+        addErrorMsg(ev.message);
         setState('error');
         es.close();
       }
@@ -474,7 +474,7 @@
     addUserMsg(text);
 
     try {
-      if (state === 'idle' || state === 'done') {
+      if (state === 'idle' || state === 'done' || state === 'error') {
         await post('/start', { task: text });
         setState('running');
         startSSE();

@@ -2,7 +2,6 @@ import asyncio
 import ctypes
 import os
 import sys
-import traceback
 
 from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
@@ -23,6 +22,17 @@ Reply with exactly one word: BROWSE or ANSWER.
 
 Request: {task}
 """
+
+
+def _friendly_error(exc: Exception) -> str:
+    msg = str(exc)
+    if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
+        return "חרגת ממכסת ה-API של Gemini. המתן עד מחר או עדכן את פרטי החיבור ב-Viro."
+    if "401" in msg or "403" in msg or "API_KEY_INVALID" in msg or "PERMISSION_DENIED" in msg:
+        return "שגיאת אימות — בדוק את ה-API key או פרטי Vertex AI בהגדרות Viro."
+    if "UNAVAILABLE" in msg or "503" in msg or "connection" in msg.lower():
+        return "שירות Gemini לא זמין כרגע. נסה שוב בעוד מספר שניות."
+    return f"שגיאה: {msg}"
 
 
 class ChatBrowserAgent:
@@ -49,7 +59,12 @@ class ChatBrowserAgent:
 
     async def start(self, task: str) -> None:
         self._history.append({"role": "user", "content": task})
-        if await self._needs_browser(task):
+        try:
+            needs_browser = await self._needs_browser(task)
+        except Exception as e:
+            await self.queue.put({"type": "error", "message": _friendly_error(e)})
+            return
+        if needs_browser:
             if sys.platform == "win32":
                 ctypes.windll.user32.AllowSetForegroundWindow(-1)
             self._agent = Agent(
@@ -74,8 +89,8 @@ class ChatBrowserAgent:
             result = response.completion
             self._history.append({"role": "assistant", "content": result})
             await self.queue.put({"type": "done", "result": result})
-        except Exception:
-            await self.queue.put({"type": "error", "message": traceback.format_exc()})
+        except Exception as e:
+            await self.queue.put({"type": "error", "message": _friendly_error(e)})
 
     def _build_task(self, current_msg: str) -> str:
         """Builds the full task string: system + conversation history + current message."""
@@ -95,8 +110,8 @@ class ChatBrowserAgent:
             await self._agent.run()
         except asyncio.CancelledError:
             await self.queue.put({"type": "stopped"})
-        except Exception:
-            await self.queue.put({"type": "error", "message": traceback.format_exc()})
+        except Exception as e:
+            await self.queue.put({"type": "error", "message": _friendly_error(e)})
         finally:
             try:
                 await self._agent.close()

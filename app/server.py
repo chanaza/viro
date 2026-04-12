@@ -1,11 +1,13 @@
 import asyncio
 import json
+import logging
 import os
+import traceback
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -16,6 +18,18 @@ from app.chat_agent import ChatBrowserAgent
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = traceback.format_exc()
+    try:
+        log = Path(__file__).parent.parent / "viro.log"
+        with open(log, "a", encoding="utf-8") as f:
+            f.write(f"\n=== EXCEPTION ===\n{tb}\n")
+    except Exception:
+        pass
+    return JSONResponse(status_code=500, content={"detail": tb})
 
 _agent: ChatBrowserAgent | None = None
 
