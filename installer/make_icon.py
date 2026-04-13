@@ -1,5 +1,5 @@
-"""Generate viro.ico — uses 4x supersampling for sharp, anti-aliased edges."""
-from PIL import Image, ImageDraw
+"""Generate viro.ico — bold 'V' monogram on indigo rounded square."""
+from PIL import Image, ImageDraw, ImageFont
 import os
 
 
@@ -9,37 +9,44 @@ def make_icon(size):
     img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
 
-    # Background rounded square
-    r = s // 6
+    # Indigo rounded square background
+    r = s // 5
     d.rounded_rectangle([0, 0, s - 1, s - 1], radius=r, fill=(79, 70, 229, 255))
 
-    f = s / 32
-    lw = max(1, round(1.5 * f))
-
-    # Crosshair circle
-    cx, cy = 9 * f, 9 * f
-    cr = 5.5 * f
-    d.ellipse([cx - cr, cy - cr, cx + cr, cy + cr], outline=(255, 255, 255, 255), width=lw)
-
-    # Center dot
-    dr = 1.8 * f
-    d.ellipse([cx - dr, cy - dr, cx + dr, cy + dr], fill=(255, 255, 255, 255))
-
-    # Crosshair lines
-    d.line([(cx, 1 * f), (cx, 4.5 * f)], fill=(255, 255, 255, 255), width=lw)
-    d.line([(cx, 13.5 * f), (cx, 17 * f)], fill=(255, 255, 255, 255), width=lw)
-    d.line([(1 * f, cy), (4.5 * f, cy)], fill=(255, 255, 255, 255), width=lw)
-    d.line([(13.5 * f, cy), (17 * f, cy)], fill=(255, 255, 255, 255), width=lw)
-
-    # Spark bottom-right
-    spark = [
-        (15 * f, 13 * f), (16.5 * f, 14.5 * f), (15.9 * f, 14.75 * f),
-        (16.15 * f, 16 * f), (15.05 * f, 15.1 * f), (14.55 * f, 16 * f),
-        (14.35 * f, 14.65 * f), (13.6 * f, 14.45 * f),
+    # Bold "V" — try to load a system font, fall back to default
+    font = None
+    font_size = int(s * 0.68)
+    candidates = [
+        r"C:\Windows\Fonts\arialbd.ttf",
+        r"C:\Windows\Fonts\calibrib.ttf",
+        r"C:\Windows\Fonts\segoeuib.ttf",
+        r"C:\Windows\Fonts\verdanab.ttf",
     ]
-    d.polygon(spark, fill=(255, 255, 255, 255))
+    for path in candidates:
+        if os.path.exists(path):
+            try:
+                font = ImageFont.truetype(path, font_size)
+                break
+            except Exception:
+                pass
 
-    # Downsample with LANCZOS for sharp anti-aliasing
+    text = "V"
+    if font:
+        bbox = d.textbbox((0, 0), text, font=font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        x = (s - tw) / 2 - bbox[0]
+        y = (s - th) / 2 - bbox[1] - s * 0.03  # slight upward nudge
+        d.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+    else:
+        # Fallback: draw a simple V shape with lines
+        lw = max(2, s // 10)
+        mid_x = s // 2
+        top_y = s * 0.18
+        bot_y = s * 0.78
+        d.line([(s * 0.18, top_y), (mid_x, bot_y)], fill=(255, 255, 255, 255), width=lw)
+        d.line([(mid_x, bot_y), (s * 0.82, top_y)], fill=(255, 255, 255, 255), width=lw)
+
     return img.resize((size, size), Image.LANCZOS)
 
 
