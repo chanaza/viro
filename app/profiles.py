@@ -1,4 +1,4 @@
-"""Detect available browser profiles on the system."""
+"""Browser profile detection and unified app config."""
 import json
 import os
 from pathlib import Path
@@ -13,6 +13,14 @@ _CHROME_CANDIDATES = [
     r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
     os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
 ]
+
+_CONFIG_PATH = Path.home() / ".viro" / "config.json"
+
+# Defaults for developer-only config keys (no UI)
+_DEV_DEFAULTS = {
+    "max_failures":          5,
+    "max_actions_per_step":  5,
+}
 
 
 def _find_exe(candidates: list[str]) -> str | None:
@@ -36,9 +44,7 @@ def _viro_profile() -> dict:
 
 
 def _profile_label(prefs: dict, entry_name: str) -> str:
-    """Build a human-readable label: 'Name (email)' or fallback."""
     name = prefs.get("profile", {}).get("name", "") or entry_name
-    # Try to get email from account_info list
     accounts = prefs.get("account_info", [])
     if isinstance(accounts, list) and accounts:
         email = accounts[0].get("email", "")
@@ -83,10 +89,7 @@ def detect_profiles() -> list[dict]:
     return profiles
 
 
-# ── Config (saved choice) ─────────────────────────────────────────────────────
-
-_CONFIG_PATH = Path.home() / ".viro" / "config.json"
-
+# ── Config ────────────────────────────────────────────────────────────────────
 
 def load_config() -> dict:
     try:
@@ -98,6 +101,25 @@ def load_config() -> dict:
 def save_config(data: dict) -> None:
     _CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     _CONFIG_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def get_config_value(key: str, default=None):
+    """Get a value from config.json, falling back to env vars, then default."""
+    cfg = load_config()
+    if key in cfg:
+        return cfg[key]
+    # env var fallback (legacy .env support)
+    env_map = {
+        "gemini_model":           "GEMINI_MODEL",
+        "gemini_api_key":         "GEMINI_API_KEY",
+        "google_cloud_project":   "GOOGLE_CLOUD_PROJECT",
+        "llm_location":           "LLM_LOCATION",
+    }
+    if key in env_map:
+        val = os.getenv(env_map[key])
+        if val:
+            return val
+    return _DEV_DEFAULTS.get(key, default)
 
 
 def get_active_profile() -> dict:

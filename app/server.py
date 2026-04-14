@@ -44,7 +44,13 @@ class SendRequest(BaseModel):
     message: str
 
 class SettingsRequest(BaseModel):
-    browser_profile: str
+    browser_profile:     str
+    auth_type:           str            # "apikey" | "vertex"
+    gemini_api_key:      str = ""
+    google_cloud_project: str = ""
+    llm_location:        str = ""
+    gemini_model:        str = "gemini-2.0-flash"
+    max_steps:           int = 100
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -146,14 +152,38 @@ async def profiles():
     return {"profiles": detect_profiles(), "active": load_config().get("browser_profile", "viro")}
 
 
+@app.get("/settings")
+async def get_settings():
+    cfg = load_config()
+    auth_type = "apikey" if cfg.get("gemini_api_key") or os.getenv("GEMINI_API_KEY") else "vertex"
+    return {
+        "auth_type":            auth_type,
+        "gemini_api_key":       cfg.get("gemini_api_key",       os.getenv("GEMINI_API_KEY", "")),
+        "google_cloud_project": cfg.get("google_cloud_project", os.getenv("GOOGLE_CLOUD_PROJECT", "")),
+        "llm_location":         cfg.get("llm_location",         os.getenv("LLM_LOCATION", "")),
+        "gemini_model":         cfg.get("gemini_model",         os.getenv("GEMINI_MODEL", "gemini-2.0-flash")),
+        "max_steps":            cfg.get("max_steps",            100),
+        "browser_profile":      cfg.get("browser_profile",      "viro"),
+    }
+
+
 @app.post("/settings")
-async def settings(body: SettingsRequest):
+async def post_settings(body: SettingsRequest):
     if _agent and _agent.is_running:
         raise HTTPException(400, "Cannot change settings while agent is running.")
     cfg = load_config()
-    cfg["browser_profile"] = body.browser_profile
+    cfg["browser_profile"]      = body.browser_profile
+    cfg["gemini_model"]         = body.gemini_model
+    cfg["max_steps"]            = body.max_steps
+    if body.auth_type == "apikey":
+        cfg["gemini_api_key"]       = body.gemini_api_key
+        cfg.pop("google_cloud_project", None)
+        cfg.pop("llm_location", None)
+    else:
+        cfg["google_cloud_project"] = body.google_cloud_project
+        cfg["llm_location"]         = body.llm_location
+        cfg.pop("gemini_api_key", None)
     save_config(cfg)
-    # Recreate agent so it picks up the new profile on next start
     global _agent
     _agent = ChatBrowserAgent()
     return {"status": "ok"}

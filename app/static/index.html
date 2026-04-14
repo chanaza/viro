@@ -293,16 +293,22 @@
     display: none;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 10px 16px;
-    align-items: center;
-    gap: 10px;
+    padding: 14px 16px;
+    flex-direction: column;
+    gap: 12px;
     font-size: 0.82rem;
-    color: var(--muted);
     flex-shrink: 0;
   }
   #settings-panel.open { display: flex; }
-  #profile-select {
-    flex: 1; padding: 5px 8px;
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+  }
+  .settings-field { display: flex; flex-direction: column; gap: 4px; }
+  .settings-field label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+  .settings-field input, .settings-field select {
+    padding: 6px 9px;
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 0.82rem;
@@ -310,18 +316,33 @@
     background: var(--bg);
     color: var(--text);
     outline: none;
-    cursor: pointer;
   }
-  #profile-select:focus { border-color: var(--accent); }
+  .settings-field input:focus, .settings-field select:focus { border-color: var(--accent); background: var(--surface); }
+  .settings-field input[type="password"] { letter-spacing: 0.1em; }
+  .settings-auth-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .settings-auth-toggle button {
+    flex: 1; padding: 6px; border: none; background: var(--bg);
+    font-size: 0.78rem; font-weight: 600; color: var(--muted); cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .settings-auth-toggle button.active { background: var(--accent); color: #fff; }
+  .settings-footer { display: flex; gap: 8px; align-items: center; }
   #btn-save-settings {
-    padding: 5px 14px;
+    padding: 6px 18px;
     background: var(--accent); color: #fff;
     border: none; border-radius: 8px;
     font-size: 0.82rem; font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
+    cursor: pointer; transition: background 0.15s;
   }
   #btn-save-settings:hover { background: #4338ca; }
+  #btn-auth {
+    padding: 6px 14px;
+    background: #1a73e8; color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+  }
+  #btn-auth:hover { background: #1557b0; }
 </style>
 </head>
 <body>
@@ -355,10 +376,47 @@
 </header>
 
 <div id="settings-panel">
-  <span>Browser profile:</span>
-  <select id="profile-select"></select>
-  <button id="btn-save-settings" onclick="saveSettings()">Save</button>
-  <button id="btn-auth" onclick="doAuthGoogle()" title="Re-authenticate with Google Cloud" style="margin-right:auto;padding:5px 12px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;">🔑 Google Auth</button>
+  <div class="settings-grid">
+    <!-- Row 1 -->
+    <div class="settings-field">
+      <label>Auth type</label>
+      <div class="settings-auth-toggle">
+        <button id="auth-btn-apikey" onclick="setAuthType('apikey')">API Key</button>
+        <button id="auth-btn-vertex" onclick="setAuthType('vertex')">Vertex AI</button>
+      </div>
+    </div>
+    <div class="settings-field">
+      <label>Model</label>
+      <input id="s-model" type="text" placeholder="gemini-2.0-flash">
+    </div>
+    <!-- Row 2: API Key fields (shown/hidden) -->
+    <div class="settings-field" id="field-apikey">
+      <label>API Key</label>
+      <input id="s-apikey" type="password" placeholder="AIza...">
+    </div>
+    <div class="settings-field" id="field-vertex-project" style="display:none">
+      <label>Project ID</label>
+      <input id="s-project" type="text" placeholder="my-project">
+    </div>
+    <!-- Row 3 -->
+    <div class="settings-field" id="field-vertex-region" style="display:none">
+      <label>Region</label>
+      <input id="s-region" type="text" placeholder="europe-west3">
+    </div>
+    <div class="settings-field">
+      <label>Max steps</label>
+      <input id="s-maxsteps" type="number" min="10" max="500" placeholder="100">
+    </div>
+    <!-- Row 4: Browser profile -->
+    <div class="settings-field" style="grid-column:1/-1">
+      <label>Browser profile</label>
+      <select id="profile-select"></select>
+    </div>
+  </div>
+  <div class="settings-footer">
+    <button id="btn-save-settings" onclick="saveSettings()">Save</button>
+    <button id="btn-auth" onclick="doAuthGoogle()">🔑 Google Auth</button>
+  </div>
 </div>
 
 <div id="chat"></div>
@@ -567,18 +625,38 @@
   // ── Settings ──────────────────────────────────────────────────────────────
   const settingsPanel = document.getElementById('settings-panel');
   const profileSelect = document.getElementById('profile-select');
+  let _authType = 'vertex';
+
+  function setAuthType(type) {
+    _authType = type;
+    document.getElementById('auth-btn-apikey').classList.toggle('active', type === 'apikey');
+    document.getElementById('auth-btn-vertex').classList.toggle('active', type === 'vertex');
+    document.getElementById('field-apikey').style.display          = type === 'apikey' ? '' : 'none';
+    document.getElementById('field-vertex-project').style.display  = type === 'vertex' ? '' : 'none';
+    document.getElementById('field-vertex-region').style.display   = type === 'vertex' ? '' : 'none';
+  }
 
   async function toggleSettings() {
     if (!settingsPanel.classList.contains('open')) {
-      // Load profiles on first open
       try {
-        const data = await fetch('/profiles').then(r => r.json());
+        const [cfg, profileData] = await Promise.all([
+          fetch('/settings').then(r => r.json()),
+          fetch('/profiles').then(r => r.json()),
+        ]);
+        // Populate fields
+        document.getElementById('s-model').value    = cfg.gemini_model    || '';
+        document.getElementById('s-apikey').value   = cfg.gemini_api_key  || '';
+        document.getElementById('s-project').value  = cfg.google_cloud_project || '';
+        document.getElementById('s-region').value   = cfg.llm_location    || '';
+        document.getElementById('s-maxsteps').value = cfg.max_steps       ?? 100;
+        setAuthType(cfg.auth_type || 'vertex');
+        // Populate profiles
         profileSelect.innerHTML = '';
-        for (const p of data.profiles) {
+        for (const p of profileData.profiles) {
           const opt = document.createElement('option');
           opt.value = p.id;
           opt.textContent = p.label;
-          if (p.id === data.active) opt.selected = true;
+          if (p.id === profileData.active) opt.selected = true;
           profileSelect.appendChild(opt);
         }
       } catch(e) { addErrorMsg(e.message); return; }
@@ -588,7 +666,15 @@
 
   async function saveSettings() {
     try {
-      await post('/settings', { browser_profile: profileSelect.value });
+      await post('/settings', {
+        auth_type:            _authType,
+        gemini_api_key:       document.getElementById('s-apikey').value.trim(),
+        google_cloud_project: document.getElementById('s-project').value.trim(),
+        llm_location:         document.getElementById('s-region').value.trim(),
+        gemini_model:         document.getElementById('s-model').value.trim() || 'gemini-2.0-flash',
+        max_steps:            parseInt(document.getElementById('s-maxsteps').value) || 100,
+        browser_profile:      profileSelect.value,
+      });
       settingsPanel.classList.remove('open');
     } catch(e) { addErrorMsg(e.message); }
   }

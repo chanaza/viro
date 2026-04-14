@@ -7,7 +7,7 @@ from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
 from browser_use.llm.messages import UserMessage
 from app.llm import create_llm
-from app.profiles import get_active_profile
+from app.profiles import get_active_profile, get_config_value
 
 _SYSTEM = (
     "You are a helpful browser assistant. "
@@ -57,8 +57,9 @@ class ChatBrowserAgent:
             user_data_dir=profile["path"],
             browser_binary_path=profile.get("executable"),
         )
-        self._agent:    Agent | None        = None
-        self._run_task: asyncio.Task | None = None
+        self._agent:     Agent | None        = None
+        self._run_task:  asyncio.Task | None = None
+        self._max_steps: int                 = get_config_value("max_steps", 100)
         self.queue:     asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
         self._history:  list[dict]          = []               # [{role, content}, ...]
 
@@ -80,6 +81,8 @@ class ChatBrowserAgent:
                 browser_profile=self._browser_profile,
                 register_new_step_callback=self._on_step,
                 register_done_callback=self._on_done,
+                max_failures=get_config_value("max_failures", 5),
+                max_actions_per_step=get_config_value("max_actions_per_step", 5),
             )
             self._run_task = asyncio.create_task(self._run_loop())
         else:
@@ -114,7 +117,7 @@ class ChatBrowserAgent:
 
     async def _run_loop(self) -> None:
         try:
-            await self._agent.run()
+            await self._agent.run(max_steps=self._max_steps)
         except asyncio.CancelledError:
             await self.queue.put({"type": "stopped"})
         except Exception as e:
