@@ -359,6 +359,7 @@
   <span>Browser profile:</span>
   <select id="profile-select"></select>
   <button id="btn-save-settings" onclick="saveSettings()">Save</button>
+  <button id="btn-auth" onclick="doAuthGoogle()" title="Re-authenticate with Google Cloud" style="margin-right:auto;padding:5px 12px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;">🔑 Google Auth</button>
 </div>
 
 <div id="chat"></div>
@@ -590,6 +591,13 @@
     try {
       await post('/settings', { browser_profile: profileSelect.value });
       settingsPanel.classList.remove('open');
+    } catch(e) { addErrorMsg(e.message); }
+  }
+
+  async function doAuthGoogle() {
+    try {
+      await post('/auth-google', {});
+      addErrorMsg('Google Auth window opened — complete sign-in there, then try again.');
     } catch(e) { addErrorMsg(e.message); }
   }
 

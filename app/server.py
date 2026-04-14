@@ -115,6 +115,30 @@ async def send(body: SendRequest):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+@app.post("/auth-google")
+async def auth_google():
+    """Launch gcloud auth application-default login in a visible terminal window."""
+    import subprocess, shutil
+    gcloud = shutil.which("gcloud") or shutil.which("gcloud.cmd")
+    if not gcloud:
+        # Try common install paths
+        candidates = [
+            os.path.expandvars(r"%LOCALAPPDATA%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"),
+            os.path.expandvars(r"%ProgramFiles%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"),
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                gcloud = c
+                break
+    if not gcloud:
+        raise HTTPException(500, "gcloud not found. Install Google Cloud SDK first.")
+    subprocess.Popen(
+        ["cmd.exe", "/c", "start", "cmd.exe", "/k", gcloud, "auth", "application-default", "login"],
+        shell=False,
+    )
+    return {"status": "launched"}
+
+
 @app.get("/profiles")
 async def profiles():
     return {"profiles": detect_profiles(), "active": load_config().get("browser_profile", "viro")}

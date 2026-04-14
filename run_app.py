@@ -76,9 +76,9 @@ def _open_app_window(server: uvicorn.Server) -> None:
         import webbrowser
         webbrowser.open(_URL)
         return
-    # When the Edge window is closed, shut down the server too
+    # When the Edge window is closed, kill the entire process
     proc.wait()
-    server.should_exit = True
+    os._exit(0)
 
 
 def _port_in_use(port: int) -> bool:

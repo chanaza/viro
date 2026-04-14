@@ -38,6 +38,10 @@ Source: "launch.vbs";           DestDir: "{app}"; Flags: ignoreversion
 Name: "{group}\{#AppName}";       Filename: "{sys}\wscript.exe"; Parameters: """{app}\launch.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\viro.ico"; Comment: "Launch Viro browser agent"
 Name: "{userdesktop}\{#AppName}"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\launch.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\viro.ico"; Comment: "Launch Viro browser agent"
 
+[Run]
+; Refresh desktop shortcut icon cache after install
+Filename: "powershell.exe"; Parameters: "-NoProfile -WindowStyle Hidden -Command \"$ws=New-Object -ComObject WScript.Shell; $sc=$ws.CreateShortcut([Environment]::GetFolderPath('Desktop')+'\\Viro.lnk'); $sc.TargetPath=[System.Environment]::SystemDirectory+'\\wscript.exe'; $sc.Arguments='\"{app}\\launch.vbs\"'; $sc.WorkingDirectory='{app}'; $sc.IconLocation='{app}\\viro.ico,0'; $sc.Save(); ie4uinit.exe -show\""; Flags: runhidden postinstall
+
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\viro-env"
 Type: filesandordirs; Name: "{app}"
