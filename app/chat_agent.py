@@ -7,7 +7,7 @@ from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
 from browser_use.llm.messages import UserMessage
 from app.llm import create_llm
-from app.profiles import get_active_profile_path
+from app.profiles import get_active_profile
 
 _SYSTEM = (
     "You are a helpful browser assistant. "
@@ -48,12 +48,14 @@ class ChatBrowserAgent:
         self._llm = create_llm()
         bw = int(os.getenv("BROWSER_W", 1100))
         bh = int(os.getenv("BROWSER_H", 900))
+        profile = get_active_profile()
         self._browser_profile = BrowserProfile(
             args=["--ignore-certificate-errors"],
             window_size=ViewportSize(width=bw, height=bh),
             window_position=ViewportSize(width=0, height=0),
             stealth=True,
-            user_data_dir=get_active_profile_path(),
+            user_data_dir=profile["path"],
+            browser_binary_path=profile.get("executable"),
         )
         self._agent:    Agent | None        = None
         self._run_task: asyncio.Task | None = None

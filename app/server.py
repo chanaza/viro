@@ -117,11 +117,10 @@ async def send(body: SendRequest):
 
 @app.post("/auth-google")
 async def auth_google():
-    """Launch gcloud auth application-default login in a visible terminal window."""
+    """Run gcloud auth silently — opens browser for Google sign-in automatically."""
     import subprocess, shutil
     gcloud = shutil.which("gcloud") or shutil.which("gcloud.cmd")
     if not gcloud:
-        # Try common install paths
         candidates = [
             os.path.expandvars(r"%LOCALAPPDATA%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"),
             os.path.expandvars(r"%ProgramFiles%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"),
@@ -133,8 +132,11 @@ async def auth_google():
     if not gcloud:
         raise HTTPException(500, "gcloud not found. Install Google Cloud SDK first.")
     subprocess.Popen(
-        ["cmd.exe", "/c", "start", "cmd.exe", "/k", gcloud, "auth", "application-default", "login"],
-        shell=False,
+        [gcloud, "auth", "application-default", "login"],
+        creationflags=subprocess.CREATE_NO_WINDOW,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     return {"status": "launched"}
 
