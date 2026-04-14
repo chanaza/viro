@@ -15,6 +15,7 @@ from pydantic import BaseModel
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from app.chat_agent import ChatBrowserAgent
+from app.profiles import detect_profiles, load_config, save_config
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
@@ -41,6 +42,9 @@ class StartRequest(BaseModel):
 
 class SendRequest(BaseModel):
     message: str
+
+class SettingsRequest(BaseModel):
+    browser_profile: str
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -110,6 +114,24 @@ async def send(body: SendRequest):
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+@app.get("/profiles")
+async def profiles():
+    return {"profiles": detect_profiles(), "active": load_config().get("browser_profile", "viro")}
+
+
+@app.post("/settings")
+async def settings(body: SettingsRequest):
+    if _agent and _agent.is_running:
+        raise HTTPException(400, "Cannot change settings while agent is running.")
+    cfg = load_config()
+    cfg["browser_profile"] = body.browser_profile
+    save_config(cfg)
+    # Recreate agent so it picks up the new profile on next start
+    global _agent
+    _agent = ChatBrowserAgent()
+    return {"status": "ok"}
+
 
 def _require_agent():
     if not _agent or not _agent.is_running:
