@@ -387,7 +387,7 @@
     </div>
     <div class="settings-field">
       <label>Model</label>
-      <input id="s-model" type="text" placeholder="gemini-2.0-flash">
+      <select id="s-model"></select>
     </div>
     <!-- Row 2: API Key fields (shown/hidden) -->
     <div class="settings-field" id="field-apikey">
@@ -643,8 +643,21 @@
           fetch('/settings').then(r => r.json()),
           fetch('/profiles').then(r => r.json()),
         ]);
-        // Populate fields
-        document.getElementById('s-model').value    = cfg.gemini_model    || '';
+        // Populate model dropdown
+        const modelSel = document.getElementById('s-model');
+        modelSel.innerHTML = '';
+        for (const m of (cfg.available_models || [])) {
+          const o = document.createElement('option');
+          o.value = m; o.textContent = m;
+          if (m === cfg.gemini_model) o.selected = true;
+          modelSel.appendChild(o);
+        }
+        // If current model isn't in list, add it
+        if (cfg.gemini_model && !cfg.available_models?.includes(cfg.gemini_model)) {
+          const o = document.createElement('option');
+          o.value = cfg.gemini_model; o.textContent = cfg.gemini_model; o.selected = true;
+          modelSel.insertBefore(o, modelSel.firstChild);
+        }
         document.getElementById('s-apikey').value   = cfg.gemini_api_key  || '';
         document.getElementById('s-project').value  = cfg.google_cloud_project || '';
         document.getElementById('s-region').value   = cfg.llm_location    || '';
@@ -671,7 +684,7 @@
         gemini_api_key:       document.getElementById('s-apikey').value.trim(),
         google_cloud_project: document.getElementById('s-project').value.trim(),
         llm_location:         document.getElementById('s-region').value.trim(),
-        gemini_model:         document.getElementById('s-model').value.trim() || 'gemini-2.0-flash',
+        gemini_model:         document.getElementById('s-model').value || 'gemini-2.0-flash',
         max_steps:            parseInt(document.getElementById('s-maxsteps').value) || 100,
         browser_profile:      profileSelect.value,
       });

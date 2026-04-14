@@ -14,12 +14,13 @@ _CHROME_CANDIDATES = [
     os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
 ]
 
+from app.config import MAX_FAILURES, MAX_ACTIONS_PER_STEP
+
 _CONFIG_PATH = Path.home() / ".viro" / "config.json"
 
-# Defaults for developer-only config keys (no UI)
 _DEV_DEFAULTS = {
-    "max_failures":          5,
-    "max_actions_per_step":  5,
+    "max_failures":         MAX_FAILURES,
+    "max_actions_per_step": MAX_ACTIONS_PER_STEP,
 }
 
 

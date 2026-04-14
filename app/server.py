@@ -15,6 +15,7 @@ from pydantic import BaseModel
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from app.chat_agent import ChatBrowserAgent
+from app.config import GEMINI_MODELS
 from app.profiles import detect_profiles, load_config, save_config
 
 app = FastAPI()
@@ -164,6 +165,7 @@ async def get_settings():
         "gemini_model":         cfg.get("gemini_model",         os.getenv("GEMINI_MODEL", "gemini-2.0-flash")),
         "max_steps":            cfg.get("max_steps",            100),
         "browser_profile":      cfg.get("browser_profile",      "viro"),
+        "available_models":     GEMINI_MODELS,
     }
 
 
