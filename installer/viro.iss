@@ -159,13 +159,13 @@ begin
     if AuthPage.Values[0] then  // API Key
       CfgContent :=
         '{' + #13#10 +
-        '  "gemini_model": "gemini-2.0-flash",' + #13#10 +
+        '  "model": "gemini-2.5-flash",' + #13#10 +
         '  "gemini_api_key": "' + Trim(ApiKeyPage.Values[0]) + '"' + #13#10 +
         '}'
     else                        // Vertex AI
       CfgContent :=
         '{' + #13#10 +
-        '  "gemini_model": "gemini-2.0-flash",' + #13#10 +
+        '  "model": "gemini-2.5-flash",' + #13#10 +
         '  "google_cloud_project": "' + Trim(VertexPage.Values[0]) + '",' + #13#10 +
         '  "llm_location": "' + Trim(VertexPage.Values[1]) + '"' + #13#10 +
         '}';
