@@ -1,19 +1,14 @@
-import os
-
 from browser_use.llm.google.chat import ChatGoogle
-from app.profiles import get_config_value
+from app.user_config import load_settings
 
 
 def create_llm() -> ChatGoogle:
-    model   = get_config_value("gemini_model",   os.getenv("GEMINI_MODEL", "gemini-2.0-flash"))
-    api_key = get_config_value("gemini_api_key", os.getenv("GEMINI_API_KEY"))
-
-    if api_key:
-        return ChatGoogle(model=model, api_key=api_key)
-
+    s = load_settings()
+    if s.gemini_api_key:
+        return ChatGoogle(model=s.gemini_model, api_key=s.gemini_api_key)
     return ChatGoogle(
-        model=model,
-        project=get_config_value("google_cloud_project", os.getenv("GOOGLE_CLOUD_PROJECT")),
-        location=get_config_value("llm_location",        os.getenv("LLM_LOCATION")),
+        model=s.gemini_model,
+        project=s.google_cloud_project,
+        location=s.llm_location,
         vertexai=True,
     )

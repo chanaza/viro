@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import os
 import traceback
 from pathlib import Path
@@ -16,7 +15,8 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 from app.chat_agent import ChatBrowserAgent
 from app.config import GEMINI_MODELS
-from app.profiles import detect_profiles, load_config, save_config
+from app.profiles import detect_profiles
+from app.user_config import UserSettings, load_settings, save_settings
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
@@ -44,14 +44,12 @@ class StartRequest(BaseModel):
 class SendRequest(BaseModel):
     message: str
 
-class SettingsRequest(BaseModel):
-    browser_profile:     str
-    auth_type:           str            # "apikey" | "vertex"
-    gemini_api_key:      str = ""
-    google_cloud_project: str = ""
-    llm_location:        str = ""
-    gemini_model:        str = "gemini-2.0-flash"
-    max_steps:           int = 100
+class OpenFileRequest(BaseModel):
+    path: str
+
+class SettingsRequest(UserSettings):
+    """Extends UserSettings with the UI-only auth_type field."""
+    auth_type: str = "vertex"   # "apikey" | "vertex" — not stored, used to clear the other credentials
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -120,7 +118,58 @@ async def send(body: SendRequest):
     return {"status": "sent"}
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Settings ──────────────────────────────────────────────────────────────────
+
+@app.get("/settings")
+async def get_settings():
+    s = load_settings()
+    return {
+        **s.model_dump(),
+        "auth_type":        "apikey" if s.gemini_api_key else "vertex",
+        "available_models": GEMINI_MODELS,
+    }
+
+
+@app.post("/settings")
+async def post_settings(body: SettingsRequest):
+    if _agent and _agent.is_running:
+        raise HTTPException(400, "Cannot change settings while agent is running.")
+    s = UserSettings(
+        gemini_model         = body.gemini_model,
+        max_steps            = body.max_steps,
+        browser_profile      = body.browser_profile,
+        gemini_api_key       = body.gemini_api_key       if body.auth_type == "apikey" else "",
+        google_cloud_project = body.google_cloud_project if body.auth_type == "vertex" else "",
+        llm_location         = body.llm_location         if body.auth_type == "vertex" else "",
+    )
+    save_settings(s)
+    global _agent
+    _agent = ChatBrowserAgent()
+    return {"status": "ok"}
+
+
+# ── Profiles ──────────────────────────────────────────────────────────────────
+
+@app.get("/profiles")
+async def profiles():
+    return {"profiles": detect_profiles(), "active": load_settings().browser_profile}
+
+
+# ── Open file ────────────────────────────────────────────────────────────────
+
+@app.post("/open-file")
+async def open_file(body: OpenFileRequest):
+    import subprocess
+    from pathlib import Path
+    p = Path(body.path)
+    if not p.exists():
+        raise HTTPException(404, f"File not found: body.path")
+    subprocess.Popen(["cmd", "/c", "start", "", str(p)],
+                     creationflags=subprocess.CREATE_NO_WINDOW)
+    return {"status": "opened"}
+
+
+# ── Google Auth ───────────────────────────────────────────────────────────────
 
 @app.post("/auth-google")
 async def auth_google():
@@ -148,48 +197,7 @@ async def auth_google():
     return {"status": "launched"}
 
 
-@app.get("/profiles")
-async def profiles():
-    return {"profiles": detect_profiles(), "active": load_config().get("browser_profile", "viro")}
-
-
-@app.get("/settings")
-async def get_settings():
-    cfg = load_config()
-    auth_type = "apikey" if cfg.get("gemini_api_key") or os.getenv("GEMINI_API_KEY") else "vertex"
-    return {
-        "auth_type":            auth_type,
-        "gemini_api_key":       cfg.get("gemini_api_key",       os.getenv("GEMINI_API_KEY", "")),
-        "google_cloud_project": cfg.get("google_cloud_project", os.getenv("GOOGLE_CLOUD_PROJECT", "")),
-        "llm_location":         cfg.get("llm_location",         os.getenv("LLM_LOCATION", "")),
-        "gemini_model":         cfg.get("gemini_model",         os.getenv("GEMINI_MODEL", "gemini-2.0-flash")),
-        "max_steps":            cfg.get("max_steps",            100),
-        "browser_profile":      cfg.get("browser_profile",      "viro"),
-        "available_models":     GEMINI_MODELS,
-    }
-
-
-@app.post("/settings")
-async def post_settings(body: SettingsRequest):
-    if _agent and _agent.is_running:
-        raise HTTPException(400, "Cannot change settings while agent is running.")
-    cfg = load_config()
-    cfg["browser_profile"]      = body.browser_profile
-    cfg["gemini_model"]         = body.gemini_model
-    cfg["max_steps"]            = body.max_steps
-    if body.auth_type == "apikey":
-        cfg["gemini_api_key"]       = body.gemini_api_key
-        cfg.pop("google_cloud_project", None)
-        cfg.pop("llm_location", None)
-    else:
-        cfg["google_cloud_project"] = body.google_cloud_project
-        cfg["llm_location"]         = body.llm_location
-        cfg.pop("gemini_api_key", None)
-    save_config(cfg)
-    global _agent
-    _agent = ChatBrowserAgent()
-    return {"status": "ok"}
-
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _require_agent():
     if not _agent or not _agent.is_running:

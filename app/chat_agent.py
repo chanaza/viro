@@ -2,12 +2,18 @@ import asyncio
 import ctypes
 import os
 import sys
+from datetime import datetime
+from pathlib import Path
 
 from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
 from browser_use.llm.messages import UserMessage
+from app.config import MAX_FAILURES, MAX_ACTIONS_PER_STEP
 from app.llm import create_llm
-from app.profiles import get_active_profile, get_config_value
+from app.profiles import get_active_profile
+from app.user_config import load_settings
+
+_SESSIONS_DIR = Path.home() / ".viro" / "sessions"
 
 _SYSTEM = (
     "You are a helpful browser assistant. "
@@ -54,18 +60,27 @@ class ChatBrowserAgent:
             window_size=ViewportSize(width=bw, height=bh),
             window_position=ViewportSize(width=0, height=0),
             stealth=True,
-            user_data_dir=profile["path"],
+            user_data_dir=profile["user_data_dir"],
+            profile_directory=profile.get("profile_directory", "Default"),
             browser_binary_path=profile.get("executable"),
         )
-        self._agent:     Agent | None        = None
-        self._run_task:  asyncio.Task | None = None
-        self._max_steps: int                 = get_config_value("max_steps", 100)
-        self.queue:     asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
-        self._history:  list[dict]          = []               # [{role, content}, ...]
+        self._agent:       Agent | None        = None
+        self._run_task:    asyncio.Task | None = None
+        self._max_steps:   int                 = load_settings().max_steps
+        self.queue:        asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
+        self._history:     list[dict]          = []               # [{role, content}, ...]
+        self._steps_log:   list[dict]          = []               # [{step, goal, action}, ...]
+        self._answer_path: Path | None         = None
+        self._log_path:    Path | None         = None
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
     async def start(self, task: str) -> None:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        _SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+        self._answer_path = _SESSIONS_DIR / f"{timestamp}_answer.md"
+        self._log_path    = _SESSIONS_DIR / f"{timestamp}_log.md"
+        self._steps_log = []
         self._history.append({"role": "user", "content": task})
         try:
             needs_browser = await self._needs_browser(task)
@@ -81,8 +96,8 @@ class ChatBrowserAgent:
                 browser_profile=self._browser_profile,
                 register_new_step_callback=self._on_step,
                 register_done_callback=self._on_done,
-                max_failures=get_config_value("max_failures", 5),
-                max_actions_per_step=get_config_value("max_actions_per_step", 5),
+                max_failures=MAX_FAILURES,
+                max_actions_per_step=MAX_ACTIONS_PER_STEP,
             )
             self._run_task = asyncio.create_task(self._run_loop())
         else:
@@ -98,7 +113,12 @@ class ChatBrowserAgent:
             response = await self._llm.ainvoke([UserMessage(content=self._build_task(task))])
             result = response.completion
             self._history.append({"role": "assistant", "content": result})
-            await self.queue.put({"type": "done", "result": result})
+            self._save_session(task, result)
+            await self.queue.put({
+                "type": "done", "result": result,
+                "answer_path": str(self._answer_path) if self._answer_path else "",
+                "log_path":    str(self._log_path)    if self._log_path    else "",
+            })
         except Exception as e:
             await self.queue.put({"type": "error", "message": _friendly_error(e)})
 
@@ -167,6 +187,7 @@ class ChatBrowserAgent:
         except Exception:
             action_name, goal = "", ""
 
+        self._steps_log.append({"step": step_num, "goal": goal, "action": action_name})
         await self.queue.put({
             "type":   "step",
             "step":   step_num,
@@ -174,8 +195,33 @@ class ChatBrowserAgent:
             "action": action_name,
         })
 
+    def _save_session(self, task: str, result: str) -> None:
+        try:
+            # Answer file — for the user
+            if self._answer_path:
+                self._answer_path.write_text(result or "(no result)", encoding="utf-8")
+
+            # Log file — for the developer
+            if self._log_path:
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                lines = [f"# Viro Log — {ts}", "", "## Task", task, ""]
+                if self._steps_log:
+                    lines += ["## Steps", ""]
+                    for s in self._steps_log:
+                        action = f" → `{s['action']}`" if s.get("action") else ""
+                        lines.append(f"{s['step']}. {s['goal']}{action}")
+                    lines.append("")
+                self._log_path.write_text("\n".join(lines), encoding="utf-8")
+        except Exception:
+            pass
+
     async def _on_done(self, history) -> None:
         result = history.final_result() if history else ""
         if result:
             self._history.append({"role": "assistant", "content": result})
-        await self.queue.put({"type": "done", "result": result or ""})
+        self._save_session(self._history[0]["content"] if self._history else "", result or "")
+        await self.queue.put({
+            "type": "done", "result": result or "",
+            "answer_path": str(self._answer_path) if self._answer_path else "",
+            "log_path":    str(self._log_path)    if self._log_path    else "",
+        })

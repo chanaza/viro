@@ -1,7 +1,9 @@
-"""Browser profile detection and unified app config."""
+"""Browser profile detection."""
 import json
 import os
 from pathlib import Path
+
+from app.user_config import load_settings
 
 
 _EDGE_CANDIDATES = [
@@ -13,15 +15,6 @@ _CHROME_CANDIDATES = [
     r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
     os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
 ]
-
-from app.config import MAX_FAILURES, MAX_ACTIONS_PER_STEP
-
-_CONFIG_PATH = Path.home() / ".viro" / "config.json"
-
-_DEV_DEFAULTS = {
-    "max_failures":         MAX_FAILURES,
-    "max_actions_per_step": MAX_ACTIONS_PER_STEP,
-}
 
 
 def _find_exe(candidates: list[str]) -> str | None:
@@ -36,22 +29,26 @@ def _viro_profile() -> dict:
     path.mkdir(parents=True, exist_ok=True)
     exe = _find_exe(_EDGE_CANDIDATES) or _find_exe(_CHROME_CANDIDATES)
     return {
-        "id":         "viro",
-        "label":      "Viro (dedicated profile)",
-        "path":       str(path),
-        "browser":    "edge" if _find_exe(_EDGE_CANDIDATES) else "chrome",
-        "executable": exe,
+        "id":               "viro",
+        "label":            "Viro (dedicated profile)",
+        "user_data_dir":    str(path),
+        "profile_directory": "Default",
+        "browser":          "edge" if _find_exe(_EDGE_CANDIDATES) else "chrome",
+        "executable":       exe,
     }
 
+
+_GENERIC_NAMES = {"default", "profile 1", "your chrome", "person 1", "profile"}
 
 def _profile_label(prefs: dict, entry_name: str) -> str:
     name = prefs.get("profile", {}).get("name", "") or entry_name
     accounts = prefs.get("account_info", [])
+    email = ""
     if isinstance(accounts, list) and accounts:
         email = accounts[0].get("email", "")
-        if email:
-            return f"{name} ({email})"
-    return name
+    # If the profile name is a generic placeholder, show just the email (if available)
+    display_name = email if (name.lower() in _GENERIC_NAMES and email) else name
+    return f"{display_name} ({email})" if (email and display_name != email) else display_name or name
 
 
 def detect_profiles() -> list[dict]:
@@ -80,51 +77,19 @@ def detect_profiles() -> list[dict]:
             except Exception:
                 label = entry.name
             profiles.append({
-                "id":         f"{browser_name.lower()}-{entry.name}",
-                "label":      f"{browser_name} — {label}",
-                "path":       str(entry),
-                "browser":    browser_name.lower(),
-                "executable": exe,
+                "id":                f"{browser_name.lower()}-{entry.name}",
+                "label":             f"{browser_name} — {label}",
+                "user_data_dir":     str(base),       # e.g. ...Chrome\User Data
+                "profile_directory": entry.name,      # e.g. Default, Profile 1
+                "browser":           browser_name.lower(),
+                "executable":        exe,
             })
 
     return profiles
 
 
-# ── Config ────────────────────────────────────────────────────────────────────
-
-def load_config() -> dict:
-    try:
-        return json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-
-
-def save_config(data: dict) -> None:
-    _CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _CONFIG_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def get_config_value(key: str, default=None):
-    """Get a value from config.json, falling back to env vars, then default."""
-    cfg = load_config()
-    if key in cfg:
-        return cfg[key]
-    # env var fallback (legacy .env support)
-    env_map = {
-        "gemini_model":           "GEMINI_MODEL",
-        "gemini_api_key":         "GEMINI_API_KEY",
-        "google_cloud_project":   "GOOGLE_CLOUD_PROJECT",
-        "llm_location":           "LLM_LOCATION",
-    }
-    if key in env_map:
-        val = os.getenv(env_map[key])
-        if val:
-            return val
-    return _DEV_DEFAULTS.get(key, default)
-
-
 def get_active_profile() -> dict:
-    profile_id = load_config().get("browser_profile", "viro")
+    profile_id = load_settings().browser_profile
     for p in detect_profiles():
         if p["id"] == profile_id:
             return p
