@@ -142,6 +142,7 @@ async def post_settings(body: SettingsRequest):
         raise HTTPException(400, "Cannot change settings while agent is running.")
     s = UserSettings(
         model                = body.model,
+        orchestrator_model   = body.orchestrator_model,
         max_steps            = body.max_steps,
         browser_profile      = body.browser_profile,
         gemini_api_key       = body.gemini_api_key       if body.google_auth_type == "apikey" else "",

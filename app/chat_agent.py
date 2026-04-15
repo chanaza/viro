@@ -9,7 +9,7 @@ from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
 from browser_use.llm.messages import UserMessage
 from app.config import MAX_FAILURES, MAX_ACTIONS_PER_STEP
-from app.llm import create_llm
+from app.llm import create_llm, create_orchestrator_llm
 from app.profiles import get_active_profile
 from app.user_config import load_settings
 
@@ -51,7 +51,8 @@ class ChatBrowserAgent:
         if sys.platform == "win32":
             sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-        self._llm = create_llm()
+        self._agent_llm        = create_llm()
+        self._orchestrator_llm = create_orchestrator_llm()
         bw = int(os.getenv("BROWSER_W", 1100))
         bh = int(os.getenv("BROWSER_H", 900))
         profile = get_active_profile()
@@ -92,7 +93,7 @@ class ChatBrowserAgent:
                 ctypes.windll.user32.AllowSetForegroundWindow(-1)
             self._agent = Agent(
                 task=self._build_task(task),
-                llm=self._llm,
+                llm=self._agent_llm,
                 browser_profile=self._browser_profile,
                 register_new_step_callback=self._on_step,
                 register_done_callback=self._on_done,
@@ -105,12 +106,12 @@ class ChatBrowserAgent:
 
     async def _needs_browser(self, task: str) -> bool:
         prompt = _ROUTER_PROMPT.format(task=self._build_task(task))
-        response = await self._llm.ainvoke([UserMessage(content=prompt)])
+        response = await self._orchestrator_llm.ainvoke([UserMessage(content=prompt)])
         return "BROWSE" in response.completion.upper()
 
     async def _answer_directly(self, task: str) -> None:
         try:
-            response = await self._llm.ainvoke([UserMessage(content=self._build_task(task))])
+            response = await self._orchestrator_llm.ainvoke([UserMessage(content=self._build_task(task))])
             result = response.completion
             self._history.append({"role": "assistant", "content": result})
             self._save_session(task, result)

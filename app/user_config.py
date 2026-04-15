@@ -10,7 +10,8 @@ _CONFIG_PATH = Path.home() / ".viro" / "config.json"
 
 class UserSettings(BaseModel):
     # General
-    model:                str = "gemini-2.5-flash"
+    model:                str = "gemini-2.5-flash"   # agent LLM (browsing)
+    orchestrator_model:   str = ""                    # orchestrator LLM (routing + direct answers); empty = same as model
     max_steps:            int = 100
     browser_profile:      str = "viro"
     # Google / Vertex AI
@@ -33,6 +34,7 @@ def load_settings() -> UserSettings:
     return UserSettings(
         # Support legacy key "gemini_model" from older config files
         model                = data.get("model") or data.get("gemini_model") or os.getenv("GEMINI_MODEL", defaults.model),
+        orchestrator_model   = data.get("orchestrator_model",   defaults.orchestrator_model),
         max_steps            = data.get("max_steps",            defaults.max_steps),
         browser_profile      = data.get("browser_profile",      defaults.browser_profile),
         gemini_api_key       = data.get("gemini_api_key")       or os.getenv("GEMINI_API_KEY",       ""),

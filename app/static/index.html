@@ -341,10 +341,16 @@
       <!-- Model -->
       <div>
         <div class="s-section-title">Model</div>
-        <div class="settings-field" style="margin-top:8px">
-          <label>Active model</label>
-          <select id="s-model" onchange="onModelChange()"></select>
-          <div id="model-note" class="model-note"></div>
+        <div class="s-2col" style="margin-top:8px">
+          <div class="settings-field">
+            <label>Agent model <span style="font-weight:400;opacity:.6">(browsing)</span></label>
+            <select id="s-model" onchange="onModelChange()"></select>
+            <div id="model-note" class="model-note"></div>
+          </div>
+          <div class="settings-field">
+            <label>Orchestrator model <span style="font-weight:400;opacity:.6">(routing &amp; direct answers)</span></label>
+            <select id="s-orchestrator-model"></select>
+          </div>
         </div>
       </div>
 
@@ -653,22 +659,35 @@
         fetch('/profiles').then(r => r.json()),
       ]);
 
-      // Model dropdown
+      // Model dropdowns
       _allModels = modelsData.models || [];
-      const modelSel = document.getElementById('s-model');
-      modelSel.innerHTML = '';
       const knownValues = _allModels.map(m => m.value);
-      if (cfg.model && !knownValues.includes(cfg.model)) {
-        const o = document.createElement('option');
-        o.value = cfg.model; o.textContent = `${cfg.model} (legacy)`; o.selected = true;
-        modelSel.appendChild(o);
+
+      // Helper: populate a model <select> with an optional "same as agent" first option
+      function populateModelSelect(selId, selectedValue, withSameOption) {
+        const sel = document.getElementById(selId);
+        sel.innerHTML = '';
+        if (withSameOption) {
+          const o = document.createElement('option');
+          o.value = ''; o.textContent = '— same as agent —';
+          if (!selectedValue) o.selected = true;
+          sel.appendChild(o);
+        }
+        if (selectedValue && !knownValues.includes(selectedValue)) {
+          const o = document.createElement('option');
+          o.value = selectedValue; o.textContent = `${selectedValue} (legacy)`; o.selected = true;
+          sel.appendChild(o);
+        }
+        for (const m of _allModels) {
+          const o = document.createElement('option');
+          o.value = m.value; o.textContent = m.label;
+          if (m.value === selectedValue) o.selected = true;
+          sel.appendChild(o);
+        }
       }
-      for (const m of _allModels) {
-        const o = document.createElement('option');
-        o.value = m.value; o.textContent = m.label;
-        if (m.value === cfg.model) o.selected = true;
-        modelSel.appendChild(o);
-      }
+
+      populateModelSelect('s-model', cfg.model, false);
+      populateModelSelect('s-orchestrator-model', cfg.orchestrator_model || '', true);
 
       // Credentials
       document.getElementById('s-apikey').value   = cfg.gemini_api_key       || '';
@@ -702,8 +721,9 @@
     const provider = _currentProvider;
     try {
       const body = {
-        model:           document.getElementById('s-model').value,
-        max_steps:       parseInt(document.getElementById('s-maxsteps').value) || 100,
+        model:              document.getElementById('s-model').value,
+        orchestrator_model: document.getElementById('s-orchestrator-model').value,
+        max_steps:          parseInt(document.getElementById('s-maxsteps').value) || 100,
         browser_profile: document.getElementById('profile-select').value,
         // always send all keys; server clears irrelevant ones based on google_auth_type
         google_auth_type:     _googleAuth,

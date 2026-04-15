@@ -78,11 +78,26 @@ _BUILDERS = {
 # ── Public API ────────────────────────────────────────────────────────────────
 
 def create_llm() -> BaseChatModel:
+    """Create the agent LLM from current settings."""
     s = load_settings()
-    model    = s.model or get_default_model()
-    provider = get_provider(model)
+    return create_llm_for(s.model or get_default_model(), s)
+
+
+def create_orchestrator_llm() -> BaseChatModel:
+    """Create the orchestrator LLM (routing + direct answers).
+    Falls back to the agent model if orchestrator_model is not set."""
+    s = load_settings()
+    model = s.orchestrator_model or s.model or get_default_model()
+    return create_llm_for(model, s)
+
+
+def create_llm_for(model_value: str, s: UserSettings | None = None) -> BaseChatModel:
+    """Create an LLM for a specific model value using current settings for credentials."""
+    if s is None:
+        s = load_settings()
+    provider = get_provider(model_value)
     builder  = _BUILDERS.get(provider)
     if not builder:
         raise ValueError(f"[LLMFactory] No builder registered for provider '{provider}'")
-    logging.info("[LLMFactory] %s / %s", provider, model)
-    return builder(model, s)
+    logging.info("[LLMFactory] %s / %s", provider, model_value)
+    return builder(model_value, s)
