@@ -42,12 +42,34 @@ Name: "{userdesktop}\{#AppName}"; Filename: "{sys}\wscript.exe"; Parameters: """
 ; Remove stale bytecode from previous installs so Python always runs fresh .py files
 Type: filesandordirs; Name: "{app}\app\__pycache__"
 
-[Run]
-; Refresh desktop shortcut icon cache after install
-Filename: "powershell.exe"; Parameters: "-NoProfile -WindowStyle Hidden -Command ""$ws=New-Object -ComObject WScript.Shell; $sc=$ws.CreateShortcut([Environment]::GetFolderPath('Desktop')+'\Viro.lnk'); $sc.TargetPath=[System.Environment]::SystemDirectory+'\wscript.exe'; $sc.Arguments=chr(34)+'{app}\launch.vbs'+chr(34); $sc.WorkingDirectory='{app}'; $sc.IconLocation='{app}\viro.ico,0'; $sc.Save(); ie4uinit.exe -show"""; Flags: runhidden postinstall
-; Run environment setup
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -NoProfile -Command ""& '{app}\setup_install.ps1' '{app}'; if ($LASTEXITCODE -ne 0) {{ Read-Host 'Setup failed. Press Enter to close' }}"""; Flags: runhidden postinstall waituntilterminated
-
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\viro-env"
 Type: filesandordirs; Name: "{app}"
+
+[Code]
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    // ── Run environment setup (visible window so user sees progress) ─────────
+    if not Exec('powershell.exe',
+      '-ExecutionPolicy Bypass -NoProfile -Command "& \"' + ExpandConstant('{app}') + '\setup_install.ps1\" \"' + ExpandConstant('{app}') + '\"; if ($LASTEXITCODE -ne 0) { Write-Host \"Setup failed. Press any key...\"; $null = $Host.UI.RawUI.ReadKey(\"NoEcho,IncludeKeyDown\") }"',
+      ExpandConstant('{app}'), SW_SHOW, ewWaitUntilTerminated, ResultCode) then
+    begin
+      MsgBox('Failed to launch setup script.' + #13#10 + SysErrorMessage(ResultCode), mbError, MB_OK);
+      Exit;
+    end;
+
+    if ResultCode <> 0 then
+      MsgBox('Environment setup failed (exit code ' + IntToStr(ResultCode) + ').' + #13#10 +
+             'Please check the output window for details.', mbError, MB_OK);
+
+    // ── Refresh desktop shortcut icon ────────────────────────────────────────
+    Exec('powershell.exe',
+      '-NoProfile -WindowStyle Hidden -Command "$ws=New-Object -ComObject WScript.Shell; $sc=$ws.CreateShortcut([Environment]::GetFolderPath(''Desktop'')+''\Viro.lnk''); $sc.TargetPath=[System.Environment]::SystemDirectory+''\wscript.exe''; $sc.Arguments=chr(34)+''' + ExpandConstant('{app}') + '\launch.vbs''+chr(34); $sc.WorkingDirectory=''' + ExpandConstant('{app}') + '''; $sc.IconLocation=''' + ExpandConstant('{app}') + '\viro.ico,0''; $sc.Save(); ie4uinit.exe -show"',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
+end;
