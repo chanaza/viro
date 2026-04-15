@@ -260,6 +260,7 @@
   }
   .settings-field input:focus, .settings-field select:focus { border-color: var(--accent); background: var(--surface); }
   .settings-field input[type="password"] { letter-spacing: 0.1em; }
+  .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 400; color: var(--text); cursor: pointer; }
   .model-note { font-size: 0.72rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
 
   /* Credential block — shown dynamically */
@@ -422,6 +423,24 @@
           <div class="settings-field">
             <label>Browser profile</label>
             <select id="profile-select"></select>
+          </div>
+          <div class="settings-field">
+            <label>Flash mode <span style="font-weight:400;opacity:.6">(faster, less capable)</span></label>
+            <label class="toggle-label"><input id="s-flash" type="checkbox"> Enable</label>
+          </div>
+          <div class="settings-field">
+            <label>Headless <span style="font-weight:400;opacity:.6">(no visible browser)</span></label>
+            <label class="toggle-label"><input id="s-headless" type="checkbox"> Enable</label>
+          </div>
+        </div>
+        <div class="s-2col" style="margin-top:8px">
+          <div class="settings-field">
+            <label>Allowed domains <span style="font-weight:400;opacity:.6">(comma-separated, empty = all)</span></label>
+            <input id="s-allowed-domains" type="text" placeholder="example.com, another.com">
+          </div>
+          <div class="settings-field">
+            <label>Prohibited domains <span style="font-weight:400;opacity:.6">(comma-separated)</span></label>
+            <input id="s-prohibited-domains" type="text" placeholder="ads.com, tracker.com">
           </div>
         </div>
       </div>
@@ -705,6 +724,10 @@
 
       // General
       document.getElementById('s-maxsteps').value = cfg.max_steps ?? 100;
+      document.getElementById('s-flash').checked           = !!cfg.flash_mode;
+      document.getElementById('s-headless').checked        = !!cfg.headless;
+      document.getElementById('s-allowed-domains').value   = cfg.allowed_domains   || '';
+      document.getElementById('s-prohibited-domains').value = cfg.prohibited_domains || '';
       const profileSelect = document.getElementById('profile-select');
       profileSelect.innerHTML = '';
       for (const p of profileData.profiles) {
@@ -721,10 +744,14 @@
     const provider = _currentProvider;
     try {
       const body = {
-        model:              document.getElementById('s-model').value,
-        orchestrator_model: document.getElementById('s-orchestrator-model').value,
-        max_steps:          parseInt(document.getElementById('s-maxsteps').value) || 100,
-        browser_profile: document.getElementById('profile-select').value,
+        model:               document.getElementById('s-model').value,
+        orchestrator_model:  document.getElementById('s-orchestrator-model').value,
+        max_steps:           parseInt(document.getElementById('s-maxsteps').value) || 100,
+        flash_mode:          document.getElementById('s-flash').checked,
+        browser_profile:     document.getElementById('profile-select').value,
+        headless:            document.getElementById('s-headless').checked,
+        allowed_domains:     document.getElementById('s-allowed-domains').value.trim(),
+        prohibited_domains:  document.getElementById('s-prohibited-domains').value.trim(),
         // always send all keys; server clears irrelevant ones based on google_auth_type
         google_auth_type:     _googleAuth,
         gemini_api_key:       document.getElementById('s-apikey').value.trim(),

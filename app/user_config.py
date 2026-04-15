@@ -9,19 +9,25 @@ _CONFIG_PATH = Path.home() / ".viro" / "config.json"
 
 
 class UserSettings(BaseModel):
-    # General
-    model:                str = "gemini-2.5-flash"   # agent LLM (browsing)
-    orchestrator_model:   str = ""                    # orchestrator LLM (routing + direct answers); empty = same as model
-    max_steps:            int = 100
-    browser_profile:      str = "viro"
+    # LLM
+    model:                str  = "gemini-2.5-flash"   # agent LLM (browsing)
+    orchestrator_model:   str  = ""                    # orchestrator LLM (routing + direct answers); empty = same as model
+    # Agent behaviour
+    max_steps:            int  = 100
+    flash_mode:           bool = False                 # faster / cheaper browsing mode
+    # Browser
+    browser_profile:      str  = "viro"
+    headless:             bool = False                 # run browser without a visible window
+    allowed_domains:      str  = ""                    # comma-separated whitelist (empty = all)
+    prohibited_domains:   str  = ""                    # comma-separated blacklist
     # Google / Vertex AI
-    gemini_api_key:       str = ""
-    google_cloud_project: str = ""
-    llm_location:         str = ""
+    gemini_api_key:       str  = ""
+    google_cloud_project: str  = ""
+    llm_location:         str  = ""
     # Other providers
-    groq_api_key:         str = ""
-    openai_api_key:       str = ""
-    anthropic_api_key:    str = ""
+    groq_api_key:         str  = ""
+    openai_api_key:       str  = ""
+    anthropic_api_key:    str  = ""
 
 
 def load_settings() -> UserSettings:
@@ -36,7 +42,11 @@ def load_settings() -> UserSettings:
         model                = data.get("model") or data.get("gemini_model") or os.getenv("GEMINI_MODEL", defaults.model),
         orchestrator_model   = data.get("orchestrator_model",   defaults.orchestrator_model),
         max_steps            = data.get("max_steps",            defaults.max_steps),
+        flash_mode           = data.get("flash_mode",           defaults.flash_mode),
         browser_profile      = data.get("browser_profile",      defaults.browser_profile),
+        headless             = data.get("headless",             defaults.headless),
+        allowed_domains      = data.get("allowed_domains",      defaults.allowed_domains),
+        prohibited_domains   = data.get("prohibited_domains",   defaults.prohibited_domains),
         gemini_api_key       = data.get("gemini_api_key")       or os.getenv("GEMINI_API_KEY",       ""),
         google_cloud_project = data.get("google_cloud_project") or os.getenv("GOOGLE_CLOUD_PROJECT", ""),
         llm_location         = data.get("llm_location")         or os.getenv("LLM_LOCATION",         ""),

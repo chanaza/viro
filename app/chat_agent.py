@@ -53,26 +53,37 @@ class ChatBrowserAgent:
 
         self._agent_llm        = create_llm()
         self._orchestrator_llm = create_orchestrator_llm()
-        bw = int(os.getenv("BROWSER_W", 1100))
-        bh = int(os.getenv("BROWSER_H", 900))
+        s   = load_settings()
+        bw  = int(os.getenv("BROWSER_W", 1100))
+        bh  = int(os.getenv("BROWSER_H", 900))
+
+        def _parse_domains(raw: str) -> list[str] | None:
+            parts = [d.strip() for d in raw.split(",") if d.strip()]
+            return parts if parts else None
+
         profile = get_active_profile()
         self._browser_profile = BrowserProfile(
             args=["--ignore-certificate-errors"],
             window_size=ViewportSize(width=bw, height=bh),
             window_position=ViewportSize(width=0, height=0),
             stealth=True,
+            headless=s.headless or None,
             user_data_dir=profile["user_data_dir"],
             profile_directory=profile.get("profile_directory", "Default"),
             browser_binary_path=profile.get("executable"),
+            allowed_domains=_parse_domains(s.allowed_domains),
+            prohibited_domains=_parse_domains(s.prohibited_domains),
         )
+        self._flash_mode:  bool                = s.flash_mode
+        self._max_steps:   int                 = s.max_steps
         self._agent:       Agent | None        = None
         self._run_task:    asyncio.Task | None = None
-        self._max_steps:   int                 = load_settings().max_steps
         self.queue:        asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
         self._history:     list[dict]          = []               # [{role, content}, ...]
         self._steps_log:   list[dict]          = []               # [{step, goal, action}, ...]
         self._answer_path: Path | None         = None
         self._log_path:    Path | None         = None
+        self._conv_path:   Path | None         = None             # full LLM conversation dump
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -81,6 +92,7 @@ class ChatBrowserAgent:
         _SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
         self._answer_path = _SESSIONS_DIR / f"{timestamp}_answer.md"
         self._log_path    = _SESSIONS_DIR / f"{timestamp}_log.md"
+        self._conv_path   = _SESSIONS_DIR / f"{timestamp}_conversation.json"
         self._steps_log = []
         self._history.append({"role": "user", "content": task})
         try:
@@ -99,6 +111,8 @@ class ChatBrowserAgent:
                 register_done_callback=self._on_done,
                 max_failures=MAX_FAILURES,
                 max_actions_per_step=MAX_ACTIONS_PER_STEP,
+                flash_mode=self._flash_mode,
+                save_conversation_path=str(self._conv_path),
             )
             self._run_task = asyncio.create_task(self._run_loop())
         else:
