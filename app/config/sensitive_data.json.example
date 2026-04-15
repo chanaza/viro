@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy this file to sensitive_data.json and fill in your values. Never commit sensitive_data.json.",
+  "_format": "Flat key-value pairs. The agent sees only the key names, never the values.",
+  "_usage": "Reference values in your task or system_extension.md as {key_name}.",
+
+  "example_username": "your-email@example.com",
+  "example_password": "your-password"
+}

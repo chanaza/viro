@@ -1,4 +1,1 @@
-.env
-**/output/
-__pycache__/
 app/config/sensitive_data.json

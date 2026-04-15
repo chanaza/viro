@@ -13,7 +13,36 @@ from app.llm import create_llm, create_orchestrator_llm
 from app.profiles import get_active_profile
 from app.user_config import load_settings
 
-_SESSIONS_DIR = Path.home() / ".viro" / "sessions"
+_SESSIONS_DIR  = Path.home() / ".viro" / "sessions"
+_CONFIG_DIR    = Path(__file__).parent / "config"
+_SYS_EXT_PATH  = _CONFIG_DIR / "system_extension.md"
+_SENS_DATA_PATH = _CONFIG_DIR / "sensitive_data.json"
+
+
+def _load_system_extension() -> str | None:
+    """Load developer-defined rules appended to the agent's system prompt."""
+    try:
+        text = _SYS_EXT_PATH.read_text(encoding="utf-8").strip()
+        # Strip comment header lines so only actual rules reach the LLM
+        lines = [l for l in text.splitlines() if not l.startswith("#") and not l.startswith("<!--")]
+        content = "\n".join(lines).strip()
+        return content if content else None
+    except FileNotFoundError:
+        return None
+
+
+def _load_sensitive_data() -> dict[str, str] | None:
+    """Load sensitive credentials for browser-use's sensitive_data injection."""
+    try:
+        import json as _json
+        data = _json.loads(_SENS_DATA_PATH.read_text(encoding="utf-8"))
+        # Strip meta/comment keys
+        result = {k: v for k, v in data.items()
+                  if not k.startswith("_") and isinstance(v, str)}
+        return result if result else None
+    except FileNotFoundError:
+        return None
+
 
 _SYSTEM = (
     "You are a helpful browser assistant. "
@@ -113,6 +142,8 @@ class ChatBrowserAgent:
                 max_actions_per_step=MAX_ACTIONS_PER_STEP,
                 flash_mode=self._flash_mode,
                 save_conversation_path=str(self._conv_path),
+                extend_system_message=_load_system_extension(),
+                sensitive_data=_load_sensitive_data(),
             )
             self._run_task = asyncio.create_task(self._run_loop())
         else:
