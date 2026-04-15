@@ -56,17 +56,21 @@ var
 // Read a value from an existing config.json
 function ReadJsonValue(const JsonFile, Key: string): string;
 var
-  Content: string;
-  Search: string;
-  Pos1, Pos2: Integer;
+  Lines: TArrayOfString;
+  Content, Search: string;
+  I, Pos1, Pos2: Integer;
 begin
   Result := '';
-  if not LoadStringFromFile(JsonFile, Content) then Exit;
+  if not FileExists(JsonFile) then Exit;
+  if not LoadStringsFromFile(JsonFile, Lines) then Exit;
+  Content := '';
+  for I := 0 to GetArrayLength(Lines) - 1 do
+    Content := Content + Lines[I];
   Search := '"' + Key + '": "';
   Pos1 := Pos(Search, Content);
   if Pos1 = 0 then Exit;
   Pos1 := Pos1 + Length(Search);
-  Pos2 := Pos('"', Copy(Content, Pos1, MaxInt));
+  Pos2 := Pos('"', Copy(Content, Pos1, Length(Content)));
   if Pos2 = 0 then Exit;
   Result := Copy(Content, Pos1, Pos2 - 1);
 end;
