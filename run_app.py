@@ -86,45 +86,50 @@ def _port_in_use(port: int) -> bool:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
+def _kill_port(port: int) -> None:
+    """Kill whatever process is holding the port (Windows)."""
+    try:
+        out = subprocess.check_output(
+            ["netstat", "-ano", "-p", "TCP"],
+            text=True, stderr=subprocess.DEVNULL
+        )
+        for line in out.splitlines():
+            if f":{port} " in line and "LISTENING" in line:
+                pid = line.split()[-1]
+                subprocess.call(
+                    ["taskkill", "/F", "/PID", pid],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
     try:
         if _port_in_use(_PORT):
-            # Server already running — just open a new window (no watcher needed)
-            time.sleep(1.5)
-            sw, sh = _screen_size()
-            app_w = sw // 4
-            app_x = sw - app_w
-            profile_dir = os.path.join(tempfile.gettempdir(), "viro-app-profile")
-            args = [
-                f"--app={_URL}",
-                f"--window-size={app_w},{sh}",
-                f"--window-position={app_x},0",
-                f"--user-data-dir={profile_dir}",
-                "--no-first-run",
-                "--disable-extensions",
-            ]
-            for exe in _EDGE_CANDIDATES:
-                try:
-                    subprocess.Popen([exe] + args)
+            # Stale server from a previous session — kill it and start fresh
+            _kill_port(_PORT)
+            # Wait up to 3s for the port to free
+            for _ in range(6):
+                time.sleep(0.5)
+                if not _port_in_use(_PORT):
                     break
-                except FileNotFoundError:
-                    continue
-        else:
-            config = uvicorn.Config(
-                "app.server:app",
-                host="127.0.0.1",
-                port=_PORT,
-                loop="asyncio",
-                log_config=None,
-            )
-            logging.basicConfig(
-                filename=_log_path,
-                level=logging.DEBUG,
-                format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-            )
-            server = uvicorn.Server(config)
-            threading.Thread(target=_open_app_window, args=(server,), daemon=True).start()
-            asyncio.run(server.serve())
+
+        config = uvicorn.Config(
+            "app.server:app",
+            host="127.0.0.1",
+            port=_PORT,
+            loop="asyncio",
+            log_config=None,
+        )
+        logging.basicConfig(
+            filename=_log_path,
+            level=logging.DEBUG,
+            format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        )
+        server = uvicorn.Server(config)
+        threading.Thread(target=_open_app_window, args=(server,), daemon=True).start()
+        asyncio.run(server.serve())
     except Exception:
         import traceback
         print("RUNTIME ERROR:", traceback.format_exc(), flush=True)

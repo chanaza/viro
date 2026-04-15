@@ -22,14 +22,14 @@
     --red:       #dc2626;
     --red-lt:    #fee2e2;
     --amber:     #d97706;
+    --google:    #1a73e8;
   }
 
   body {
     font-family: system-ui, -apple-system, sans-serif;
     background: var(--bg);
     height: 100vh;
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
     color: var(--text);
   }
 
@@ -38,35 +38,28 @@
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    display: flex; align-items: center; gap: 10px;
     flex-shrink: 0;
   }
   .logo {
-    width: 32px; height: 32px;
-    background: var(--accent);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; background: var(--accent);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
   .logo svg { width: 18px; height: 18px; }
   .header-title { flex: 1; display: flex; flex-direction: column; gap: 1px; }
   header h1 { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1; }
   .tagline { font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.03em; line-height: 1; }
+
   .status-badge {
     display: flex; align-items: center; gap: 6px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px 10px;
-    font-size: 0.72rem;
-    color: var(--muted);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px;
+    font-size: 0.72rem; color: var(--muted);
   }
   #status-dot {
     width: 7px; height: 7px; border-radius: 50%;
-    background: #94a3b8;
-    transition: background 0.3s;
+    background: #94a3b8; transition: background 0.3s;
   }
   #status-dot.idle    { background: #94a3b8; }
   #status-dot.running { background: #22c55e; animation: pulse 1.2s infinite; }
@@ -74,6 +67,27 @@
   #status-dot.done    { background: var(--accent); }
   #status-dot.error   { background: var(--red); }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+
+  /* Google Auth button — header, Vertex only */
+  #btn-google-auth {
+    display: none;
+    align-items: center; gap: 5px;
+    padding: 4px 11px;
+    background: var(--google); color: #fff;
+    border: none; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s; white-space: nowrap;
+  }
+  #btn-google-auth.visible { display: flex; }
+  #btn-google-auth:hover { background: #1557b0; }
+
+  #btn-settings {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); padding: 4px; border-radius: 6px;
+    display: flex; align-items: center;
+    transition: color 0.15s, background 0.15s;
+  }
+  #btn-settings:hover { color: var(--text); background: var(--bg); }
 
   /* ── Chat ── */
   #chat {
@@ -83,44 +97,31 @@
     scroll-behavior: smooth;
   }
 
-  /* ── User bubble ── */
   .msg-user {
     align-self: flex-start;
-    background: var(--accent-lt);
-    color: #312e81;
+    background: var(--accent-lt); color: #312e81;
     border: 1px solid #c7d2fe;
     padding: 10px 14px;
     border-radius: 16px 16px 16px 4px;
-    font-size: 0.88rem;
-    line-height: 1.55;
-    max-width: 88%;
-    word-break: break-word;
+    font-size: 0.88rem; line-height: 1.55;
+    max-width: 88%; word-break: break-word;
   }
 
-  /* ── Answer bubble ── */
   .msg-answer {
     align-self: flex-end;
-    background: #f0fdf4;
-    color: #166534;
+    background: #f0fdf4; color: #166534;
     border: 1px solid #d1fae5;
     padding: 12px 14px;
     border-radius: 16px 16px 4px 16px;
-    font-size: 0.88rem;
-    line-height: 1.6;
-    max-width: 88%;
-    word-break: break-word;
+    font-size: 0.88rem; line-height: 1.6;
+    max-width: 88%; word-break: break-word;
   }
   .msg-answer .answer-label {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #16a34a;
-    margin-bottom: 5px;
+    font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: #16a34a; margin-bottom: 5px;
   }
-  .msg-answer .md h1,.msg-answer .md h2,.msg-answer .md h3 {
-    font-weight: 700; margin: 10px 0 4px; color: #14532d;
-  }
+  .msg-answer .md h1,.msg-answer .md h2,.msg-answer .md h3 { font-weight: 700; margin: 10px 0 4px; color: #14532d; }
   .msg-answer .md h1 { font-size: 1rem; }
   .msg-answer .md h2 { font-size: 0.93rem; }
   .msg-answer .md h3 { font-size: 0.88rem; }
@@ -128,53 +129,39 @@
   .msg-answer .md p:last-child { margin-bottom: 0; }
   .msg-answer .md ul,.msg-answer .md ol { padding-right: 18px; margin: 4px 0 6px; }
   .msg-answer .md li { margin-bottom: 3px; }
-  .msg-answer .md code {
-    background: #dcfce7; border-radius: 4px;
-    padding: 1px 5px; font-size: 0.82rem; font-family: monospace;
-  }
-  .msg-answer .md pre {
-    background: #dcfce7; border-radius: 8px;
-    padding: 10px 12px; overflow-x: auto; margin: 6px 0;
-  }
+  .msg-answer .md code { background: #dcfce7; border-radius: 4px; padding: 1px 5px; font-size: 0.82rem; font-family: monospace; }
+  .msg-answer .md pre { background: #dcfce7; border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 6px 0; }
   .msg-answer .md pre code { background: none; padding: 0; }
-  .msg-answer .md blockquote {
-    border-right: 3px solid #86efac; margin: 6px 0;
-    padding: 4px 10px; color: #166534; opacity: 0.85;
-  }
+  .msg-answer .md blockquote { border-right: 3px solid #86efac; margin: 6px 0; padding: 4px 10px; color: #166534; opacity: 0.85; }
   .msg-answer .md strong { font-weight: 700; }
   .msg-answer .md hr { border: none; border-top: 1px solid #d1fae5; margin: 8px 0; }
   .msg-answer .md a { color: #15803d; text-decoration: underline; }
-  .msg-answer .md table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 0.83rem; }
+  .msg-answer .md table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 0.83rem; display: block; overflow-x: auto; }
   .msg-answer .md th,.msg-answer .md td { border: 1px solid #d1fae5; padding: 4px 8px; white-space: nowrap; }
   .msg-answer .md th { background: #dcfce7; font-weight: 600; }
-  .msg-answer .md table { display: block; overflow-x: auto; }
   .answer-files {
     display: flex; gap: 8px; margin-top: 8px; padding-top: 8px;
     border-top: 1px solid #d1fae5;
   }
   .answer-files button {
     display: flex; align-items: center; gap: 4px;
-    padding: 3px 10px;
-    background: #f0fdf4; color: #166534;
+    padding: 3px 10px; background: #f0fdf4; color: #166534;
     border: 1px solid #d1fae5; border-radius: 20px;
     font-size: 0.72rem; font-weight: 600; cursor: pointer;
     transition: background 0.15s;
   }
   .answer-files button:hover { background: #dcfce7; }
 
-  /* ── Error bubble ── */
   .msg-error {
     align-self: flex-end;
-    background: var(--red-lt);
-    color: #7f1d1d;
+    background: var(--red-lt); color: #7f1d1d;
     border: 1px solid #fecaca;
     padding: 10px 14px;
     border-radius: 16px 16px 4px 16px;
-    font-size: 0.85rem;
-    max-width: 88%;
+    font-size: 0.85rem; max-width: 88%;
   }
 
-  /* ── Steps group ── */
+  /* ── Steps ── */
   .steps-group { align-self: flex-end; width: 100%; max-width: 88%; }
   .steps-toggle {
     display: flex; align-items: center; gap: 7px;
@@ -184,29 +171,14 @@
   }
   .steps-toggle .chevron { display: inline-block; transition: transform 0.2s; font-style: normal; }
   .steps-toggle.open .chevron { transform: rotate(90deg); }
-  .steps-toggle .pill {
-    background: var(--border); border-radius: 10px;
-    padding: 1px 8px; font-weight: 600; color: var(--muted); font-size: 0.7rem;
-  }
+  .steps-toggle .pill { background: var(--border); border-radius: 10px; padding: 1px 8px; font-weight: 600; color: var(--muted); font-size: 0.7rem; }
   .steps-body { display: none; flex-direction: column; gap: 4px; margin-top: 6px; }
   .steps-body.open { display: flex; }
-  .step-item {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 8px 12px;
-    display: flex; align-items: flex-start; gap: 10px;
-  }
-  .step-num-badge {
-    background: var(--accent-lt); color: var(--accent);
-    font-size: 0.65rem; font-weight: 700; border-radius: 6px;
-    padding: 2px 6px; flex-shrink: 0; margin-top: 1px;
-  }
+  .step-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; display: flex; align-items: flex-start; gap: 10px; }
+  .step-num-badge { background: var(--accent-lt); color: var(--accent); font-size: 0.65rem; font-weight: 700; border-radius: 6px; padding: 2px 6px; flex-shrink: 0; margin-top: 1px; }
   .step-content { flex: 1; min-width: 0; }
   .step-goal { font-size: 0.82rem; color: var(--text); line-height: 1.4; }
-  .step-action {
-    display: inline-block; margin-top: 4px; font-size: 0.68rem;
-    background: var(--bg); color: var(--muted);
-    border: 1px solid var(--border); border-radius: 8px; padding: 1px 7px;
-  }
+  .step-action { display: inline-block; margin-top: 4px; font-size: 0.68rem; background: var(--bg); color: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: 1px 7px; }
 
   /* ── Footer ── */
   footer {
@@ -244,15 +216,6 @@
   #btn-send:hover { background: #4338ca; }
   #btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* ── Settings button ── */
-  #btn-settings {
-    background: none; border: none; cursor: pointer;
-    color: var(--muted); padding: 4px; border-radius: 6px;
-    display: flex; align-items: center;
-    transition: color 0.15s, background 0.15s;
-  }
-  #btn-settings:hover { color: var(--text); background: var(--bg); }
-
   /* ── Settings modal ── */
   #settings-modal {
     display: none; position: fixed; inset: 0; z-index: 100;
@@ -263,14 +226,13 @@
   .settings-dialog {
     background: var(--surface); border-radius: 14px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-    width: 480px; max-width: calc(100vw - 32px);
+    width: 460px; max-width: calc(100vw - 32px);
     max-height: calc(100vh - 48px);
     display: flex; flex-direction: column; overflow: hidden;
   }
   .settings-dialog-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px 14px; border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+    padding: 16px 20px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .settings-dialog-header h2 { font-size: 0.95rem; font-weight: 700; }
   #btn-close-settings {
@@ -280,21 +242,15 @@
     transition: color 0.15s, background 0.15s;
   }
   #btn-close-settings:hover { color: var(--text); background: var(--bg); }
-
   .settings-dialog-body {
     padding: 16px 20px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 16px;
-    font-size: 0.82rem;
+    display: flex; flex-direction: column; gap: 16px; font-size: 0.82rem;
   }
-
-  /* Section title */
   .s-section-title {
     font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.06em; color: var(--muted);
     padding-bottom: 6px; border-bottom: 1px solid var(--border);
-    margin-bottom: 2px;
   }
-
   .settings-field { display: flex; flex-direction: column; gap: 4px; }
   .settings-field label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
   .settings-field input, .settings-field select {
@@ -304,17 +260,14 @@
   }
   .settings-field input:focus, .settings-field select:focus { border-color: var(--accent); background: var(--surface); }
   .settings-field input[type="password"] { letter-spacing: 0.1em; }
+  .model-note { font-size: 0.72rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
 
-  .model-note {
-    font-size: 0.72rem; color: var(--muted);
-    margin-top: 3px; line-height: 1.4;
-  }
-
+  /* Credential block — shown dynamically */
+  .cred-block { display: flex; flex-direction: column; gap: 10px; }
+  .cred-block.hidden { display: none; }
   .s-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
-
   .google-auth-toggle {
-    display: flex; gap: 0; border: 1px solid var(--border);
-    border-radius: 8px; overflow: hidden;
+    display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
   }
   .google-auth-toggle button {
     flex: 1; padding: 6px; border: none; background: var(--bg);
@@ -327,26 +280,16 @@
     display: flex; gap: 8px; align-items: center; justify-content: flex-end;
     padding: 12px 20px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
   }
-  #btn-auth {
-    margin-right: auto; padding: 6px 14px;
-    background: #1a73e8; color: #fff;
-    border: none; border-radius: 8px;
-    font-size: 0.82rem; font-weight: 600; cursor: pointer;
-    transition: background 0.15s;
-  }
-  #btn-auth:hover { background: #1557b0; }
   #btn-cancel-settings {
     padding: 6px 16px; background: var(--bg); color: var(--text);
     border: 1px solid var(--border); border-radius: 8px;
-    font-size: 0.82rem; font-weight: 600; cursor: pointer;
-    transition: background 0.15s;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
   }
   #btn-cancel-settings:hover { background: #f1f5f9; }
   #btn-save-settings {
     padding: 6px 18px; background: var(--accent); color: #fff;
     border: none; border-radius: 8px;
-    font-size: 0.82rem; font-weight: 600; cursor: pointer;
-    transition: background 0.15s;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
   }
   #btn-save-settings:hover { background: #4338ca; }
 </style>
@@ -373,6 +316,12 @@
     <div id="status-dot" class="idle"></div>
     <span id="status-label">Ready</span>
   </div>
+  <button id="btn-google-auth" onclick="doAuthGoogle()" title="Re-authenticate with Google Cloud">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+    </svg>
+    Google Auth
+  </button>
   <button id="btn-settings" title="Settings" onclick="toggleSettings()">
     <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
       <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
@@ -385,7 +334,7 @@
   <div class="settings-dialog">
     <div class="settings-dialog-header">
       <h2>Settings</h2>
-      <button id="btn-close-settings" onclick="closeSettings()" title="Close">✕</button>
+      <button id="btn-close-settings" onclick="closeSettings()">✕</button>
     </div>
     <div class="settings-dialog-body">
 
@@ -399,50 +348,60 @@
         </div>
       </div>
 
-      <!-- Google credentials -->
+      <!-- Credentials — dynamic per provider -->
       <div>
-        <div class="s-section-title">Google credentials</div>
-        <div style="margin-top:8px; display:flex; flex-direction:column; gap:10px">
-          <div class="settings-field">
-            <label>Auth method</label>
-            <div class="google-auth-toggle">
-              <button id="auth-btn-apikey" onclick="setGoogleAuth('apikey')">API Key</button>
-              <button id="auth-btn-vertex" onclick="setGoogleAuth('vertex')">Vertex AI</button>
-            </div>
-          </div>
-          <div id="field-apikey" class="settings-field">
-            <label>API Key</label>
-            <input id="s-apikey" type="password" placeholder="AIza...">
-          </div>
-          <div id="field-vertex" class="s-2col" style="display:none">
-            <div class="settings-field">
-              <label>Project ID</label>
-              <input id="s-project" type="text" placeholder="my-project">
-            </div>
-            <div class="settings-field">
-              <label>Region</label>
-              <input id="s-region" type="text" placeholder="europe-west3">
-            </div>
-          </div>
-        </div>
-      </div>
+        <div class="s-section-title">Credentials</div>
+        <div style="margin-top:8px">
 
-      <!-- Other providers -->
-      <div>
-        <div class="s-section-title">Other provider API keys</div>
-        <div class="s-2col" style="margin-top:8px">
-          <div class="settings-field">
-            <label>Groq</label>
-            <input id="s-groq" type="password" placeholder="gsk_...">
+          <!-- Google: API Key or Vertex AI toggle -->
+          <div id="cred-google" class="cred-block hidden">
+            <div class="settings-field">
+              <label>Auth method</label>
+              <div class="google-auth-toggle">
+                <button id="auth-btn-apikey" onclick="setGoogleAuth('apikey')">API Key</button>
+                <button id="auth-btn-vertex" onclick="setGoogleAuth('vertex')">Vertex AI</button>
+              </div>
+            </div>
+            <div id="cred-google-apikey" class="settings-field hidden">
+              <label>Gemini API Key</label>
+              <input id="s-apikey" type="password" placeholder="AIza...">
+            </div>
+            <div id="cred-google-vertex" class="s-2col hidden">
+              <div class="settings-field">
+                <label>Project ID</label>
+                <input id="s-project" type="text" placeholder="my-project">
+              </div>
+              <div class="settings-field">
+                <label>Region</label>
+                <input id="s-region" type="text" placeholder="europe-west3">
+              </div>
+            </div>
           </div>
-          <div class="settings-field">
-            <label>OpenAI</label>
-            <input id="s-openai" type="password" placeholder="sk-...">
+
+          <!-- Groq -->
+          <div id="cred-groq" class="cred-block hidden">
+            <div class="settings-field">
+              <label>Groq API Key</label>
+              <input id="s-groq" type="password" placeholder="gsk_...">
+            </div>
           </div>
-          <div class="settings-field" style="grid-column:1/-1">
-            <label>Anthropic</label>
-            <input id="s-anthropic" type="password" placeholder="sk-ant-...">
+
+          <!-- OpenAI -->
+          <div id="cred-openai" class="cred-block hidden">
+            <div class="settings-field">
+              <label>OpenAI API Key</label>
+              <input id="s-openai" type="password" placeholder="sk-...">
+            </div>
           </div>
+
+          <!-- Anthropic -->
+          <div id="cred-anthropic" class="cred-block hidden">
+            <div class="settings-field">
+              <label>Anthropic API Key</label>
+              <input id="s-anthropic" type="password" placeholder="sk-ant-...">
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -463,7 +422,6 @@
 
     </div>
     <div class="settings-dialog-footer">
-      <button id="btn-auth" onclick="doAuthGoogle()">🔑 Google Auth</button>
       <button id="btn-cancel-settings" onclick="closeSettings()">Cancel</button>
       <button id="btn-save-settings" onclick="saveSettings()">Save</button>
     </div>
@@ -496,37 +454,36 @@
   const btnResume = document.getElementById('btn-resume');
   const btnStop   = document.getElementById('btn-stop');
   const dot       = document.getElementById('status-dot');
-  const label     = document.getElementById('status-label');
+  const statusLbl = document.getElementById('status-label');
+  const btnGoogleAuth = document.getElementById('btn-google-auth');
 
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
   });
 
+  // ── State ────────────────────────────────────────────────────────────────
   function setState(s) {
     state = s;
     dot.className = s;
     const labels = { idle: 'Ready', running: 'Running', paused: 'Paused', done: 'Done', error: 'Error' };
-    label.textContent = labels[s] || s;
+    statusLbl.textContent = labels[s] || s;
     btnPause.disabled  = s !== 'running';
     btnResume.disabled = s !== 'paused';
     btnStop.disabled   = s === 'idle' || s === 'done';
     btnSend.textContent = s === 'idle' || s === 'done' ? 'Send' : 'Add instruction';
   }
 
+  // ── Chat messages ────────────────────────────────────────────────────────
   function addUserMsg(text) {
     const d = document.createElement('div');
-    d.className = 'msg-user';
-    d.textContent = text;
-    chat.appendChild(d);
-    scrollChat();
+    d.className = 'msg-user'; d.textContent = text;
+    chat.appendChild(d); scrollChat();
   }
 
   function addAnswerMsg(text, answerPath, logPath) {
     const d = document.createElement('div');
     d.className = 'msg-answer';
-    const body = text
-      ? `<div class="md">${marked.parse(text)}</div>`
-      : '<div>(no result)</div>';
+    const body = text ? `<div class="md">${marked.parse(text)}</div>` : '<div>(no result)</div>';
     let files = '';
     if (answerPath || logPath) {
       files = '<div class="answer-files">';
@@ -535,20 +492,17 @@
       files += '</div>';
     }
     d.innerHTML = `<div class="answer-label">Answer</div>${body}${files}`;
-    chat.appendChild(d);
-    scrollChat();
-  }
-
-  async function openFile(path) {
-    try { await post('/open-file', { path }); } catch(e) { addErrorMsg(e.message); }
+    chat.appendChild(d); scrollChat();
   }
 
   function addErrorMsg(text) {
     const d = document.createElement('div');
-    d.className = 'msg-error';
-    d.textContent = text;
-    chat.appendChild(d);
-    scrollChat();
+    d.className = 'msg-error'; d.textContent = text;
+    chat.appendChild(d); scrollChat();
+  }
+
+  async function openFile(path) {
+    try { await post('/open-file', { path }); } catch(e) { addErrorMsg(e.message); }
   }
 
   function ensureStepsGroup() {
@@ -561,8 +515,7 @@
     const body = document.createElement('div');
     body.className = 'steps-body';
     toggle.onclick = () => { toggle.classList.toggle('open'); body.classList.toggle('open'); };
-    wrapper.appendChild(toggle);
-    wrapper.appendChild(body);
+    wrapper.appendChild(toggle); wrapper.appendChild(body);
     chat.appendChild(wrapper);
     stepsGroup = { toggle, body, count: 0 };
     scrollChat();
@@ -580,12 +533,12 @@
         `<div class="step-goal">${goal || ''}</div>` +
         (action ? `<span class="step-action">${action}</span>` : '') +
       `</div>`;
-    stepsGroup.body.appendChild(item);
-    scrollChat();
+    stepsGroup.body.appendChild(item); scrollChat();
   }
 
   function scrollChat() { chat.scrollTop = chat.scrollHeight; }
 
+  // ── HTTP ─────────────────────────────────────────────────────────────────
   async function post(path, body) {
     const r = await fetch(path, {
       method: 'POST',
@@ -599,6 +552,7 @@
     return r.json();
   }
 
+  // ── SSE ──────────────────────────────────────────────────────────────────
   function startSSE() {
     if (es) es.close();
     stepsGroup = null;
@@ -606,31 +560,19 @@
     es.onmessage = e => {
       const ev = JSON.parse(e.data);
       if (ev.type === 'ping') return;
-      if (ev.type === 'step') {
-        addStep(ev.step, ev.goal, ev.action);
-      } else if (ev.type === 'paused') {
-        setState('paused');
-      } else if (ev.type === 'resumed') {
-        setState('running');
-      } else if (ev.type === 'done') {
-        addAnswerMsg(ev.result, ev.answer_path, ev.log_path);
-        setState('done');
-        es.close();
-      } else if (ev.type === 'stopped') {
-        addErrorMsg('Agent stopped.');
-        setState('idle');
-        es.close();
-      } else if (ev.type === 'error') {
-        addErrorMsg(ev.message);
-        setState('error');
-        es.close();
-      }
+      if      (ev.type === 'step')    { addStep(ev.step, ev.goal, ev.action); }
+      else if (ev.type === 'paused')  { setState('paused'); }
+      else if (ev.type === 'resumed') { setState('running'); }
+      else if (ev.type === 'done')    { addAnswerMsg(ev.result, ev.answer_path, ev.log_path); setState('done'); es.close(); }
+      else if (ev.type === 'stopped') { addErrorMsg('Agent stopped.'); setState('idle'); es.close(); }
+      else if (ev.type === 'error')   { addErrorMsg(ev.message); setState('error'); es.close(); }
     };
     es.onerror = () => {
       if (state === 'running' || state === 'paused') setTimeout(startSSE, 2000);
     };
   }
 
+  // ── Agent controls ───────────────────────────────────────────────────────
   async function doSend() {
     const text = input.value.trim();
     if (!text) return;
@@ -638,18 +580,14 @@
     addUserMsg(text);
     try {
       if (state === 'idle' || state === 'done' || state === 'error') {
-        await post('/start', { task: text });
-        setState('running');
-        startSSE();
+        await post('/start', { task: text }); setState('running'); startSSE();
       } else {
         await post('/send', { message: text });
       }
-    } catch (e) { addErrorMsg(e.message); }
+    } catch(e) { addErrorMsg(e.message); }
   }
 
-  async function doPause() {
-    try { await post('/pause'); setState('paused'); } catch(e) { addErrorMsg(e.message); }
-  }
+  async function doPause()  { try { await post('/pause');  setState('paused');   } catch(e) { addErrorMsg(e.message); } }
   async function doResume() {
     const text = input.value.trim();
     if (text) { doSend(); }
@@ -660,6 +598,7 @@
     try { await post('/stop'); } catch(e) { addErrorMsg(e.message); btnStop.disabled = false; }
   }
 
+  // ── Marked ───────────────────────────────────────────────────────────────
   marked.use({
     gfm: true, breaks: true,
     renderer: (() => {
@@ -670,28 +609,41 @@
     })(),
   });
 
-  // ── Settings ──────────────────────────────────────────────────────────────
-  const settingsModal = document.getElementById('settings-modal');
-  const profileSelect = document.getElementById('profile-select');
-  let _googleAuth = 'vertex';
+  // ── Settings ─────────────────────────────────────────────────────────────
   let _allModels  = [];
+  let _googleAuth = 'vertex';
+  let _currentProvider = 'google';
+
+  // Show/hide Google Auth button based on whether Vertex is in use
+  function syncGoogleAuthBtn(cfg) {
+    const isVertex = cfg.google_cloud_project && !cfg.gemini_api_key;
+    btnGoogleAuth.classList.toggle('visible', isVertex);
+  }
 
   function setGoogleAuth(type) {
     _googleAuth = type;
     document.getElementById('auth-btn-apikey').classList.toggle('active', type === 'apikey');
     document.getElementById('auth-btn-vertex').classList.toggle('active', type === 'vertex');
-    document.getElementById('field-apikey').style.display = type === 'apikey' ? '' : 'none';
-    document.getElementById('field-vertex').style.display = type === 'vertex' ? '' : 'none';
+    document.getElementById('cred-google-apikey').classList.toggle('hidden', type !== 'apikey');
+    document.getElementById('cred-google-vertex').classList.toggle('hidden', type !== 'vertex');
+  }
+
+  function showCredBlock(provider) {
+    _currentProvider = provider;
+    ['google', 'groq', 'openai', 'anthropic'].forEach(p => {
+      document.getElementById(`cred-${p}`).classList.toggle('hidden', p !== provider);
+    });
   }
 
   function onModelChange() {
     const val  = document.getElementById('s-model').value;
     const meta = _allModels.find(m => m.value === val);
     document.getElementById('model-note').textContent = meta?.note || '';
+    if (meta) showCredBlock(meta.provider);
   }
 
-  function closeSettings() { settingsModal.classList.remove('open'); }
-  function onModalBackdropClick(e) { if (e.target === settingsModal) closeSettings(); }
+  function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+  function onModalBackdropClick(e) { if (e.target === document.getElementById('settings-modal')) closeSettings(); }
 
   async function toggleSettings() {
     try {
@@ -706,7 +658,6 @@
       const modelSel = document.getElementById('s-model');
       modelSel.innerHTML = '';
       const knownValues = _allModels.map(m => m.value);
-      // Legacy model not in list
       if (cfg.model && !knownValues.includes(cfg.model)) {
         const o = document.createElement('option');
         o.value = cfg.model; o.textContent = `${cfg.model} (legacy)`; o.selected = true;
@@ -714,26 +665,28 @@
       }
       for (const m of _allModels) {
         const o = document.createElement('option');
-        o.value = m.value;
-        o.textContent = m.label;
+        o.value = m.value; o.textContent = m.label;
         if (m.value === cfg.model) o.selected = true;
         modelSel.appendChild(o);
       }
-      onModelChange();
 
-      // Google credentials
-      document.getElementById('s-apikey').value  = cfg.gemini_api_key       || '';
-      document.getElementById('s-project').value = cfg.google_cloud_project  || '';
-      document.getElementById('s-region').value  = cfg.llm_location          || '';
+      // Credentials
+      document.getElementById('s-apikey').value   = cfg.gemini_api_key       || '';
+      document.getElementById('s-project').value  = cfg.google_cloud_project || '';
+      document.getElementById('s-region').value   = cfg.llm_location         || '';
+      document.getElementById('s-groq').value     = cfg.groq_api_key         || '';
+      document.getElementById('s-openai').value   = cfg.openai_api_key       || '';
+      document.getElementById('s-anthropic').value = cfg.anthropic_api_key   || '';
       setGoogleAuth(cfg.google_auth_type || 'vertex');
 
-      // Other providers
-      document.getElementById('s-groq').value     = cfg.groq_api_key      || '';
-      document.getElementById('s-openai').value   = cfg.openai_api_key    || '';
-      document.getElementById('s-anthropic').value = cfg.anthropic_api_key || '';
+      // Show credentials section for active model's provider
+      const activeMeta = _allModels.find(m => m.value === cfg.model);
+      showCredBlock(activeMeta?.provider || 'google');
+      document.getElementById('model-note').textContent = activeMeta?.note || '';
 
       // General
       document.getElementById('s-maxsteps').value = cfg.max_steps ?? 100;
+      const profileSelect = document.getElementById('profile-select');
       profileSelect.innerHTML = '';
       for (const p of profileData.profiles) {
         const opt = document.createElement('option');
@@ -742,13 +695,17 @@
         profileSelect.appendChild(opt);
       }
     } catch(e) { addErrorMsg(e.message); return; }
-    settingsModal.classList.add('open');
+    document.getElementById('settings-modal').classList.add('open');
   }
 
   async function saveSettings() {
+    const provider = _currentProvider;
     try {
-      await post('/settings', {
-        model:                document.getElementById('s-model').value,
+      const body = {
+        model:           document.getElementById('s-model').value,
+        max_steps:       parseInt(document.getElementById('s-maxsteps').value) || 100,
+        browser_profile: document.getElementById('profile-select').value,
+        // always send all keys; server clears irrelevant ones based on google_auth_type
         google_auth_type:     _googleAuth,
         gemini_api_key:       document.getElementById('s-apikey').value.trim(),
         google_cloud_project: document.getElementById('s-project').value.trim(),
@@ -756,9 +713,11 @@
         groq_api_key:         document.getElementById('s-groq').value.trim(),
         openai_api_key:       document.getElementById('s-openai').value.trim(),
         anthropic_api_key:    document.getElementById('s-anthropic').value.trim(),
-        max_steps:            parseInt(document.getElementById('s-maxsteps').value) || 100,
-        browser_profile:      profileSelect.value,
-      });
+      };
+      await post('/settings', body);
+      // Update Google Auth button visibility after save
+      const isVertex = body.google_auth_type === 'vertex' && !!body.google_cloud_project;
+      btnGoogleAuth.classList.toggle('visible', isVertex);
       closeSettings();
     } catch(e) { addErrorMsg(e.message); }
   }
@@ -769,6 +728,9 @@
       addErrorMsg('A browser window will open for Google sign-in. After completing sign-in, try again.');
     } catch(e) { addErrorMsg(e.message); }
   }
+
+  // Init: load settings to set Google Auth button visibility on startup
+  fetch('/settings').then(r => r.json()).then(syncGoogleAuthBtn).catch(() => {});
 
   setState('idle');
 </script>
