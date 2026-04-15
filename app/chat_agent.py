@@ -44,12 +44,6 @@ def _load_sensitive_data() -> dict[str, str] | None:
         return None
 
 
-_SYSTEM = (
-    "You are a helpful browser assistant. "
-    "Use Google (engine='google') for any web searches — never DuckDuckGo. "
-    "Language rule: if the user's message contains any Hebrew characters, your final answer must be in Hebrew. Otherwise respond in the user's language."
-)
-
 _ROUTER_PROMPT = """\
 Decide if answering the following request requires browsing the web or not.
 Reply with exactly one word: BROWSE or ANSWER.
@@ -103,6 +97,7 @@ class ChatBrowserAgent:
             allowed_domains=_parse_domains(s.allowed_domains),
             prohibited_domains=_parse_domains(s.prohibited_domains),
         )
+        self._sys_ext:     str | None           = _load_system_extension()
         self._flash_mode:  bool                = s.flash_mode
         self._max_steps:   int                 = s.max_steps
         self._agent:       Agent | None        = None
@@ -142,7 +137,7 @@ class ChatBrowserAgent:
                 max_actions_per_step=MAX_ACTIONS_PER_STEP,
                 flash_mode=self._flash_mode,
                 save_conversation_path=str(self._conv_path),
-                extend_system_message=_load_system_extension(),
+                extend_system_message=self._sys_ext,
                 sensitive_data=_load_sensitive_data(),
             )
             self._run_task = asyncio.create_task(self._run_loop())
@@ -169,8 +164,8 @@ class ChatBrowserAgent:
             await self.queue.put({"type": "error", "message": _friendly_error(e)})
 
     def _build_task(self, current_msg: str) -> str:
-        """Builds the full task string: system + conversation history + current message."""
-        parts = [_SYSTEM]
+        """Builds the full task string for orchestrator calls: system rules + conversation history + current message."""
+        parts = [self._sys_ext] if self._sys_ext else []
         prior = self._history[:-1]  # all turns before the current one
         if prior:
             parts.append("\n--- Conversation so far ---")
