@@ -9,12 +9,18 @@ _CONFIG_PATH = Path.home() / ".viro" / "config.json"
 
 
 class UserSettings(BaseModel):
-    gemini_model:         str = "gemini-2.0-flash"
+    # General
+    model:                str = "gemini-2.5-flash"
+    max_steps:            int = 100
+    browser_profile:      str = "viro"
+    # Google / Vertex AI
     gemini_api_key:       str = ""
     google_cloud_project: str = ""
     llm_location:         str = ""
-    max_steps:            int = 100
-    browser_profile:      str = "viro"
+    # Other providers
+    groq_api_key:         str = ""
+    openai_api_key:       str = ""
+    anthropic_api_key:    str = ""
 
 
 def load_settings() -> UserSettings:
@@ -22,13 +28,19 @@ def load_settings() -> UserSettings:
         data = json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
     except Exception:
         data = {}
+
+    defaults = UserSettings()
     return UserSettings(
-        gemini_model         = data.get("gemini_model")         or os.getenv("GEMINI_MODEL",         UserSettings.model_fields["gemini_model"].default),
+        # Support legacy key "gemini_model" from older config files
+        model                = data.get("model") or data.get("gemini_model") or os.getenv("GEMINI_MODEL", defaults.model),
+        max_steps            = data.get("max_steps",            defaults.max_steps),
+        browser_profile      = data.get("browser_profile",      defaults.browser_profile),
         gemini_api_key       = data.get("gemini_api_key")       or os.getenv("GEMINI_API_KEY",       ""),
         google_cloud_project = data.get("google_cloud_project") or os.getenv("GOOGLE_CLOUD_PROJECT", ""),
         llm_location         = data.get("llm_location")         or os.getenv("LLM_LOCATION",         ""),
-        max_steps            = data.get("max_steps",            UserSettings.model_fields["max_steps"].default),
-        browser_profile      = data.get("browser_profile",      UserSettings.model_fields["browser_profile"].default),
+        groq_api_key         = data.get("groq_api_key")         or os.getenv("GROQ_API_KEY",         ""),
+        openai_api_key       = data.get("openai_api_key")       or os.getenv("OPENAI_API_KEY",       ""),
+        anthropic_api_key    = data.get("anthropic_api_key")    or os.getenv("ANTHROPIC_API_KEY",    ""),
     )
 
 

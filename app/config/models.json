@@ -1,0 +1,81 @@
+[
+  { "value": "gemini-2.5-flash",
+    "label": "Gemini 2.5 Flash",
+    "note": "Best all-around — recommended starting point",
+    "provider": "google", "default": true },
+
+  { "value": "gemini-2.0-flash",
+    "label": "Gemini 2.0 Flash",
+    "note": "Fast and capable — solid everyday choice",
+    "provider": "google" },
+
+  { "value": "gemini-2.5-pro",
+    "label": "Gemini 2.5 Pro",
+    "note": "Strongest Google model — best for complex tasks",
+    "provider": "google" },
+
+  { "value": "gemini-1.5-pro",
+    "label": "Gemini 1.5 Pro",
+    "note": "Long context (2M tokens) — good for large pages",
+    "provider": "google" },
+
+  { "value": "gemini-1.5-flash",
+    "label": "Gemini 1.5 Flash",
+    "note": "Lightweight and fast — good for simple tasks",
+    "provider": "google" },
+
+  { "value": "llama-3.3-70b-versatile",
+    "label": "Llama 3.3 70B (Groq 🆓)",
+    "note": "Top free pick — strong reasoning, well-structured output",
+    "provider": "groq", "free": true },
+
+  { "value": "meta-llama/llama-4-scout-17b-16e-instruct",
+    "label": "Llama 4 Scout 17B (Groq 🆓)",
+    "note": "Newest Llama — fast with strong reasoning",
+    "provider": "groq", "free": true },
+
+  { "value": "qwen/qwen3-32b",
+    "label": "Qwen3 32B (Groq 🆓)",
+    "note": "Strong structured reasoning — great for data-heavy tasks",
+    "provider": "groq", "free": true },
+
+  { "value": "moonshotai/kimi-k2-instruct",
+    "label": "Kimi K2 (Groq 🆓)",
+    "note": "Excellent at complex, multi-step reasoning",
+    "provider": "groq", "free": true },
+
+  { "value": "llama-3.1-8b-instant",
+    "label": "Llama 3.1 8B (Groq 🆓)",
+    "note": "Ultra-fast — good for quick, simple tasks",
+    "provider": "groq", "free": true },
+
+  { "value": "gpt-4o",
+    "label": "GPT-4o",
+    "note": "OpenAI flagship — excellent instruction following",
+    "provider": "openai" },
+
+  { "value": "gpt-4o-mini",
+    "label": "GPT-4o Mini",
+    "note": "Fast and cheap — good for straightforward browsing",
+    "provider": "openai" },
+
+  { "value": "o3-mini",
+    "label": "o3 Mini",
+    "note": "Strong reasoning model — good for multi-step logic",
+    "provider": "openai" },
+
+  { "value": "claude-3-5-sonnet-20241022",
+    "label": "Claude 3.5 Sonnet",
+    "note": "Best Anthropic model — precise, thoughtful responses",
+    "provider": "anthropic" },
+
+  { "value": "claude-3-5-haiku-20241022",
+    "label": "Claude 3.5 Haiku",
+    "note": "Fast and affordable Anthropic option",
+    "provider": "anthropic" },
+
+  { "value": "claude-3-7-sonnet-20250219",
+    "label": "Claude 3.7 Sonnet",
+    "note": "Latest Anthropic — extended thinking capability",
+    "provider": "anthropic" }
+]

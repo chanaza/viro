@@ -14,7 +14,7 @@ from pydantic import BaseModel
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from app.chat_agent import ChatBrowserAgent
-from app.config import GEMINI_MODELS
+from app.llm import get_models, get_provider
 from app.profiles import detect_profiles
 from app.user_config import UserSettings, load_settings, save_settings
 
@@ -48,11 +48,11 @@ class OpenFileRequest(BaseModel):
     path: str
 
 class SettingsRequest(UserSettings):
-    """Extends UserSettings with the UI-only auth_type field."""
-    auth_type: str = "vertex"   # "apikey" | "vertex" — not stored, used to clear the other credentials
+    """Extends UserSettings with the UI-only google_auth_type field."""
+    google_auth_type: str = "vertex"   # "apikey" | "vertex" — not stored, clears the other Google credentials
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# ── Agent routes ──────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
@@ -72,7 +72,6 @@ async def start(body: StartRequest):
 
 @app.get("/stream")
 async def stream():
-    """SSE endpoint — yields events from the agent queue."""
     if not _agent:
         raise HTTPException(400, "No active session.")
 
@@ -118,6 +117,13 @@ async def send(body: SendRequest):
     return {"status": "sent"}
 
 
+# ── Models ────────────────────────────────────────────────────────────────────
+
+@app.get("/models")
+async def models():
+    return {"models": get_models()}
+
+
 # ── Settings ──────────────────────────────────────────────────────────────────
 
 @app.get("/settings")
@@ -125,8 +131,7 @@ async def get_settings():
     s = load_settings()
     return {
         **s.model_dump(),
-        "auth_type":        "apikey" if s.gemini_api_key else "vertex",
-        "available_models": GEMINI_MODELS,
+        "google_auth_type": "apikey" if s.gemini_api_key else "vertex",
     }
 
 
@@ -135,12 +140,15 @@ async def post_settings(body: SettingsRequest):
     if _agent and _agent.is_running:
         raise HTTPException(400, "Cannot change settings while agent is running.")
     s = UserSettings(
-        gemini_model         = body.gemini_model,
+        model                = body.model,
         max_steps            = body.max_steps,
         browser_profile      = body.browser_profile,
-        gemini_api_key       = body.gemini_api_key       if body.auth_type == "apikey" else "",
-        google_cloud_project = body.google_cloud_project if body.auth_type == "vertex" else "",
-        llm_location         = body.llm_location         if body.auth_type == "vertex" else "",
+        gemini_api_key       = body.gemini_api_key       if body.google_auth_type == "apikey" else "",
+        google_cloud_project = body.google_cloud_project if body.google_auth_type == "vertex" else "",
+        llm_location         = body.llm_location         if body.google_auth_type == "vertex" else "",
+        groq_api_key         = body.groq_api_key,
+        openai_api_key       = body.openai_api_key,
+        anthropic_api_key    = body.anthropic_api_key,
     )
     save_settings(s)
     global _agent
@@ -155,15 +163,14 @@ async def profiles():
     return {"profiles": detect_profiles(), "active": load_settings().browser_profile}
 
 
-# ── Open file ────────────────────────────────────────────────────────────────
+# ── Open file ─────────────────────────────────────────────────────────────────
 
 @app.post("/open-file")
 async def open_file(body: OpenFileRequest):
     import subprocess
-    from pathlib import Path
     p = Path(body.path)
     if not p.exists():
-        raise HTTPException(404, f"File not found: body.path")
+        raise HTTPException(404, f"File not found: {body.path}")
     subprocess.Popen(["cmd", "/c", "start", "", str(p)],
                      creationflags=subprocess.CREATE_NO_WINDOW)
     return {"status": "opened"}
@@ -173,7 +180,6 @@ async def open_file(body: OpenFileRequest):
 
 @app.post("/auth-google")
 async def auth_google():
-    """Run gcloud auth silently — opens browser for Google sign-in automatically."""
     import subprocess, shutil
     gcloud = shutil.which("gcloud") or shutil.which("gcloud.cmd")
     if not gcloud:
@@ -190,9 +196,7 @@ async def auth_google():
     subprocess.Popen(
         [gcloud, "auth", "application-default", "login"],
         creationflags=subprocess.CREATE_NO_WINDOW,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     return {"status": "launched"}
 

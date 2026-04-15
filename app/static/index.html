@@ -118,8 +118,6 @@
     color: #16a34a;
     margin-bottom: 5px;
   }
-
-  /* ── Markdown content inside answer bubble ── */
   .msg-answer .md h1,.msg-answer .md h2,.msg-answer .md h3 {
     font-weight: 700; margin: 10px 0 4px; color: #14532d;
   }
@@ -146,6 +144,10 @@
   .msg-answer .md strong { font-weight: 700; }
   .msg-answer .md hr { border: none; border-top: 1px solid #d1fae5; margin: 8px 0; }
   .msg-answer .md a { color: #15803d; text-decoration: underline; }
+  .msg-answer .md table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 0.83rem; }
+  .msg-answer .md th,.msg-answer .md td { border: 1px solid #d1fae5; padding: 4px 8px; white-space: nowrap; }
+  .msg-answer .md th { background: #dcfce7; font-weight: 600; }
+  .msg-answer .md table { display: block; overflow-x: auto; }
   .answer-files {
     display: flex; gap: 8px; margin-top: 8px; padding-top: 8px;
     border-top: 1px solid #d1fae5;
@@ -159,10 +161,6 @@
     transition: background 0.15s;
   }
   .answer-files button:hover { background: #dcfce7; }
-  .msg-answer .md table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 0.83rem; }
-  .msg-answer .md th,.msg-answer .md td { border: 1px solid #d1fae5; padding: 4px 8px; white-space: nowrap; }
-  .msg-answer .md th { background: #dcfce7; font-weight: 600; }
-  .msg-answer .md table { display: block; overflow-x: auto; }
 
   /* ── Error bubble ── */
   .msg-error {
@@ -176,86 +174,50 @@
     max-width: 88%;
   }
 
-  /* ── Steps group (collapsible) ── */
-  .steps-group {
-    align-self: flex-end;
-    width: 100%;
-    max-width: 88%;
-  }
+  /* ── Steps group ── */
+  .steps-group { align-self: flex-end; width: 100%; max-width: 88%; }
   .steps-toggle {
     display: flex; align-items: center; gap: 7px;
     background: none; border: none; cursor: pointer;
-    color: var(--muted);
-    font-size: 0.75rem;
-    padding: 3px 0;
-    width: 100%;
-    text-align: right;
+    color: var(--muted); font-size: 0.75rem;
+    padding: 3px 0; width: 100%; text-align: right;
   }
-  .steps-toggle .chevron {
-    display: inline-block;
-    transition: transform 0.2s;
-    font-style: normal;
-  }
+  .steps-toggle .chevron { display: inline-block; transition: transform 0.2s; font-style: normal; }
   .steps-toggle.open .chevron { transform: rotate(90deg); }
   .steps-toggle .pill {
-    background: var(--border);
-    border-radius: 10px;
-    padding: 1px 8px;
-    font-weight: 600;
-    color: var(--muted);
-    font-size: 0.7rem;
+    background: var(--border); border-radius: 10px;
+    padding: 1px 8px; font-weight: 600; color: var(--muted); font-size: 0.7rem;
   }
-
   .steps-body { display: none; flex-direction: column; gap: 4px; margin-top: 6px; }
   .steps-body.open { display: flex; }
-
   .step-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 12px;
     display: flex; align-items: flex-start; gap: 10px;
   }
   .step-num-badge {
-    background: var(--accent-lt);
-    color: var(--accent);
-    font-size: 0.65rem;
-    font-weight: 700;
-    border-radius: 6px;
-    padding: 2px 6px;
-    flex-shrink: 0;
-    margin-top: 1px;
+    background: var(--accent-lt); color: var(--accent);
+    font-size: 0.65rem; font-weight: 700; border-radius: 6px;
+    padding: 2px 6px; flex-shrink: 0; margin-top: 1px;
   }
   .step-content { flex: 1; min-width: 0; }
   .step-goal { font-size: 0.82rem; color: var(--text); line-height: 1.4; }
   .step-action {
-    display: inline-block; margin-top: 4px;
-    font-size: 0.68rem;
-    background: var(--bg);
-    color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1px 7px;
+    display: inline-block; margin-top: 4px; font-size: 0.68rem;
+    background: var(--bg); color: var(--muted);
+    border: 1px solid var(--border); border-radius: 8px; padding: 1px 7px;
   }
 
   /* ── Footer ── */
   footer {
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    padding: 10px 14px;
-    display: flex; flex-direction: column; gap: 8px;
-    flex-shrink: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
   }
   #controls { display: flex; gap: 6px; }
   #controls button {
-    padding: 5px 13px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background: var(--surface);
-    color: var(--text);
+    padding: 5px 13px; border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer; font-size: 0.78rem; font-weight: 600;
+    background: var(--surface); color: var(--text);
     transition: background 0.15s, opacity 0.15s;
   }
   #btn-pause:not(:disabled):hover  { background: var(--bg); }
@@ -266,29 +228,17 @@
   #input-row { display: flex; gap: 8px; align-items: flex-end; }
   #task-input {
     flex: 1; padding: 9px 12px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-size: 0.88rem;
-    font-family: inherit;
-    resize: none;
-    outline: none;
-    line-height: 1.5;
-    background: var(--bg);
-    color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px;
+    font-size: 0.88rem; font-family: inherit; resize: none; outline: none;
+    line-height: 1.5; background: var(--bg); color: var(--text);
     transition: border-color 0.15s;
   }
   #task-input:focus { border-color: var(--accent); background: var(--surface); }
   #task-input::placeholder { font-family: inherit; color: #94a3b8; }
   #btn-send {
-    padding: 9px 16px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 0.88rem;
-    font-weight: 700;
-    white-space: nowrap;
+    padding: 9px 16px; background: var(--accent); color: #fff;
+    border: none; border-radius: 10px; cursor: pointer;
+    font-size: 0.88rem; font-weight: 700; white-space: nowrap;
     transition: background 0.15s;
   }
   #btn-send:hover { background: #4338ca; }
@@ -305,24 +255,22 @@
 
   /* ── Settings modal ── */
   #settings-modal {
-    display: none;
-    position: fixed; inset: 0; z-index: 100;
+    display: none; position: fixed; inset: 0; z-index: 100;
     background: rgba(15, 23, 42, 0.5);
     align-items: center; justify-content: center;
   }
   #settings-modal.open { display: flex; }
   .settings-dialog {
-    background: var(--surface);
-    border-radius: 14px;
+    background: var(--surface); border-radius: 14px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-    width: 440px; max-width: calc(100vw - 32px);
-    display: flex; flex-direction: column;
-    overflow: hidden;
+    width: 480px; max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 48px);
+    display: flex; flex-direction: column; overflow: hidden;
   }
   .settings-dialog-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px 14px;
-    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 14px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
   }
   .settings-dialog-header h2 { font-size: 0.95rem; font-weight: 700; }
   #btn-close-settings {
@@ -332,65 +280,73 @@
     transition: color 0.15s, background 0.15s;
   }
   #btn-close-settings:hover { color: var(--text); background: var(--bg); }
+
   .settings-dialog-body {
-    padding: 16px 20px;
-    display: flex; flex-direction: column; gap: 12px;
+    padding: 16px 20px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 16px;
     font-size: 0.82rem;
   }
-  .settings-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px 16px;
+
+  /* Section title */
+  .s-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted);
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
   }
+
   .settings-field { display: flex; flex-direction: column; gap: 4px; }
   .settings-field label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
   .settings-field input, .settings-field select {
-    padding: 6px 9px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.82rem;
-    font-family: inherit;
-    background: var(--bg);
-    color: var(--text);
-    outline: none;
+    padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 0.82rem; font-family: inherit;
+    background: var(--bg); color: var(--text); outline: none;
   }
   .settings-field input:focus, .settings-field select:focus { border-color: var(--accent); background: var(--surface); }
   .settings-field input[type="password"] { letter-spacing: 0.1em; }
-  .settings-auth-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .settings-auth-toggle button {
+
+  .model-note {
+    font-size: 0.72rem; color: var(--muted);
+    margin-top: 3px; line-height: 1.4;
+  }
+
+  .s-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+
+  .google-auth-toggle {
+    display: flex; gap: 0; border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+  }
+  .google-auth-toggle button {
     flex: 1; padding: 6px; border: none; background: var(--bg);
     font-size: 0.78rem; font-weight: 600; color: var(--muted); cursor: pointer;
     transition: background 0.15s, color 0.15s;
   }
-  .settings-auth-toggle button.active { background: var(--accent); color: #fff; }
+  .google-auth-toggle button.active { background: var(--accent); color: #fff; }
+
   .settings-dialog-footer {
     display: flex; gap: 8px; align-items: center; justify-content: flex-end;
-    padding: 12px 20px 16px;
-    border-top: 1px solid var(--border);
+    padding: 12px 20px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
   }
   #btn-auth {
-    margin-right: auto;
-    padding: 6px 14px;
+    margin-right: auto; padding: 6px 14px;
     background: #1a73e8; color: #fff;
     border: none; border-radius: 8px;
-    font-size: 0.82rem; font-weight: 600;
-    cursor: pointer; transition: background 0.15s;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s;
   }
   #btn-auth:hover { background: #1557b0; }
   #btn-cancel-settings {
-    padding: 6px 16px;
-    background: var(--bg); color: var(--text);
+    padding: 6px 16px; background: var(--bg); color: var(--text);
     border: 1px solid var(--border); border-radius: 8px;
-    font-size: 0.82rem; font-weight: 600;
-    cursor: pointer; transition: background 0.15s;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s;
   }
   #btn-cancel-settings:hover { background: #f1f5f9; }
   #btn-save-settings {
-    padding: 6px 18px;
-    background: var(--accent); color: #fff;
+    padding: 6px 18px; background: var(--accent); color: #fff;
     border: none; border-radius: 8px;
-    font-size: 0.82rem; font-weight: 600;
-    cursor: pointer; transition: background 0.15s;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s;
   }
   #btn-save-settings:hover { background: #4338ca; }
 </style>
@@ -399,7 +355,6 @@
 
 <header>
   <div class="logo">
-    <!-- crosshair + spark: agent that targets and acts -->
     <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="9" cy="9" r="5.5" stroke="white" stroke-width="1.5"/>
       <circle cx="9" cy="9" r="1.8" fill="white"/>
@@ -425,6 +380,7 @@
   </button>
 </header>
 
+<!-- ── Settings modal ── -->
 <div id="settings-modal" onclick="onModalBackdropClick(event)">
   <div class="settings-dialog">
     <div class="settings-dialog-header">
@@ -432,43 +388,79 @@
       <button id="btn-close-settings" onclick="closeSettings()" title="Close">✕</button>
     </div>
     <div class="settings-dialog-body">
-      <div class="settings-grid">
-        <!-- Row 1 -->
-        <div class="settings-field">
-          <label>Auth type</label>
-          <div class="settings-auth-toggle">
-            <button id="auth-btn-apikey" onclick="setAuthType('apikey')">API Key</button>
-            <button id="auth-btn-vertex" onclick="setAuthType('vertex')">Vertex AI</button>
-          </div>
-        </div>
-        <div class="settings-field">
-          <label>Model</label>
-          <select id="s-model"></select>
-        </div>
-        <!-- Row 2: API Key fields (shown/hidden) -->
-        <div class="settings-field" id="field-apikey">
-          <label>API Key</label>
-          <input id="s-apikey" type="password" placeholder="AIza...">
-        </div>
-        <div class="settings-field" id="field-vertex-project" style="display:none">
-          <label>Project ID</label>
-          <input id="s-project" type="text" placeholder="my-project">
-        </div>
-        <!-- Row 3 -->
-        <div class="settings-field" id="field-vertex-region" style="display:none">
-          <label>Region</label>
-          <input id="s-region" type="text" placeholder="europe-west3">
-        </div>
-        <div class="settings-field">
-          <label>Max steps</label>
-          <input id="s-maxsteps" type="number" min="10" max="500" placeholder="100">
-        </div>
-        <!-- Row 4: Browser profile -->
-        <div class="settings-field" style="grid-column:1/-1">
-          <label>Browser profile</label>
-          <select id="profile-select"></select>
+
+      <!-- Model -->
+      <div>
+        <div class="s-section-title">Model</div>
+        <div class="settings-field" style="margin-top:8px">
+          <label>Active model</label>
+          <select id="s-model" onchange="onModelChange()"></select>
+          <div id="model-note" class="model-note"></div>
         </div>
       </div>
+
+      <!-- Google credentials -->
+      <div>
+        <div class="s-section-title">Google credentials</div>
+        <div style="margin-top:8px; display:flex; flex-direction:column; gap:10px">
+          <div class="settings-field">
+            <label>Auth method</label>
+            <div class="google-auth-toggle">
+              <button id="auth-btn-apikey" onclick="setGoogleAuth('apikey')">API Key</button>
+              <button id="auth-btn-vertex" onclick="setGoogleAuth('vertex')">Vertex AI</button>
+            </div>
+          </div>
+          <div id="field-apikey" class="settings-field">
+            <label>API Key</label>
+            <input id="s-apikey" type="password" placeholder="AIza...">
+          </div>
+          <div id="field-vertex" class="s-2col" style="display:none">
+            <div class="settings-field">
+              <label>Project ID</label>
+              <input id="s-project" type="text" placeholder="my-project">
+            </div>
+            <div class="settings-field">
+              <label>Region</label>
+              <input id="s-region" type="text" placeholder="europe-west3">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other providers -->
+      <div>
+        <div class="s-section-title">Other provider API keys</div>
+        <div class="s-2col" style="margin-top:8px">
+          <div class="settings-field">
+            <label>Groq</label>
+            <input id="s-groq" type="password" placeholder="gsk_...">
+          </div>
+          <div class="settings-field">
+            <label>OpenAI</label>
+            <input id="s-openai" type="password" placeholder="sk-...">
+          </div>
+          <div class="settings-field" style="grid-column:1/-1">
+            <label>Anthropic</label>
+            <input id="s-anthropic" type="password" placeholder="sk-ant-...">
+          </div>
+        </div>
+      </div>
+
+      <!-- General -->
+      <div>
+        <div class="s-section-title">General</div>
+        <div class="s-2col" style="margin-top:8px">
+          <div class="settings-field">
+            <label>Max steps</label>
+            <input id="s-maxsteps" type="number" min="10" max="500" placeholder="100">
+          </div>
+          <div class="settings-field">
+            <label>Browser profile</label>
+            <select id="profile-select"></select>
+          </div>
+        </div>
+      </div>
+
     </div>
     <div class="settings-dialog-footer">
       <button id="btn-auth" onclick="doAuthGoogle()">🔑 Google Auth</button>
@@ -495,9 +487,7 @@
 <script>
   let state = 'idle';
   let es = null;
-
-  // Current run's step group
-  let stepsGroup = null;   // { toggle, body, count }
+  let stepsGroup = null;
 
   const chat      = document.getElementById('chat');
   const input     = document.getElementById('task-input');
@@ -563,25 +553,17 @@
 
   function ensureStepsGroup() {
     if (stepsGroup) return;
-
     const wrapper = document.createElement('div');
     wrapper.className = 'steps-group';
-
     const toggle = document.createElement('button');
     toggle.className = 'steps-toggle';
     toggle.innerHTML = `<i class="chevron">›</i><span class="pill">0</span><span>Steps</span>`;
-    toggle.onclick = () => {
-      toggle.classList.toggle('open');
-      body.classList.toggle('open');
-    };
-
     const body = document.createElement('div');
     body.className = 'steps-body';
-
+    toggle.onclick = () => { toggle.classList.toggle('open'); body.classList.toggle('open'); };
     wrapper.appendChild(toggle);
     wrapper.appendChild(body);
     chat.appendChild(wrapper);
-
     stepsGroup = { toggle, body, count: 0 };
     scrollChat();
   }
@@ -590,7 +572,6 @@
     ensureStepsGroup();
     stepsGroup.count++;
     stepsGroup.toggle.querySelector('.pill').textContent = stepsGroup.count;
-
     const item = document.createElement('div');
     item.className = 'step-item';
     item.innerHTML =
@@ -603,9 +584,7 @@
     scrollChat();
   }
 
-  function scrollChat() {
-    chat.scrollTop = chat.scrollHeight;
-  }
+  function scrollChat() { chat.scrollTop = chat.scrollHeight; }
 
   async function post(path, body) {
     const r = await fetch(path, {
@@ -622,7 +601,7 @@
 
   function startSSE() {
     if (es) es.close();
-    stepsGroup = null;  // new run = new steps group
+    stepsGroup = null;
     es = new EventSource('/stream');
     es.onmessage = e => {
       const ev = JSON.parse(e.data);
@@ -648,9 +627,7 @@
       }
     };
     es.onerror = () => {
-      if (state === 'running' || state === 'paused') {
-        setTimeout(startSSE, 2000);
-      }
+      if (state === 'running' || state === 'paused') setTimeout(startSSE, 2000);
     };
   }
 
@@ -659,7 +636,6 @@
     if (!text) return;
     input.value = '';
     addUserMsg(text);
-
     try {
       if (state === 'idle' || state === 'done' || state === 'error') {
         await post('/start', { task: text });
@@ -668,9 +644,7 @@
       } else {
         await post('/send', { message: text });
       }
-    } catch (e) {
-      addErrorMsg(e.message);
-    }
+    } catch (e) { addErrorMsg(e.message); }
   }
 
   async function doPause() {
@@ -678,12 +652,8 @@
   }
   async function doResume() {
     const text = input.value.trim();
-    if (text) {
-      // treat as send — which also resumes internally
-      doSend();
-    } else {
-      try { await post('/resume'); setState('running'); } catch(e) { addErrorMsg(e.message); }
-    }
+    if (text) { doSend(); }
+    else { try { await post('/resume'); setState('running'); } catch(e) { addErrorMsg(e.message); } }
   }
   async function doStop() {
     btnStop.disabled = true;
@@ -703,57 +673,71 @@
   // ── Settings ──────────────────────────────────────────────────────────────
   const settingsModal = document.getElementById('settings-modal');
   const profileSelect = document.getElementById('profile-select');
-  let _authType = 'vertex';
+  let _googleAuth = 'vertex';
+  let _allModels  = [];
 
-  function setAuthType(type) {
-    _authType = type;
+  function setGoogleAuth(type) {
+    _googleAuth = type;
     document.getElementById('auth-btn-apikey').classList.toggle('active', type === 'apikey');
     document.getElementById('auth-btn-vertex').classList.toggle('active', type === 'vertex');
-    document.getElementById('field-apikey').style.display          = type === 'apikey' ? '' : 'none';
-    document.getElementById('field-vertex-project').style.display  = type === 'vertex' ? '' : 'none';
-    document.getElementById('field-vertex-region').style.display   = type === 'vertex' ? '' : 'none';
+    document.getElementById('field-apikey').style.display = type === 'apikey' ? '' : 'none';
+    document.getElementById('field-vertex').style.display = type === 'vertex' ? '' : 'none';
   }
 
-  function closeSettings() {
-    settingsModal.classList.remove('open');
+  function onModelChange() {
+    const val  = document.getElementById('s-model').value;
+    const meta = _allModels.find(m => m.value === val);
+    document.getElementById('model-note').textContent = meta?.note || '';
   }
 
-  function onModalBackdropClick(e) {
-    if (e.target === settingsModal) closeSettings();
-  }
+  function closeSettings() { settingsModal.classList.remove('open'); }
+  function onModalBackdropClick(e) { if (e.target === settingsModal) closeSettings(); }
 
   async function toggleSettings() {
     try {
-      const [cfg, profileData] = await Promise.all([
+      const [cfg, modelsData, profileData] = await Promise.all([
         fetch('/settings').then(r => r.json()),
+        fetch('/models').then(r => r.json()),
         fetch('/profiles').then(r => r.json()),
       ]);
-      // Populate model dropdown
+
+      // Model dropdown
+      _allModels = modelsData.models || [];
       const modelSel = document.getElementById('s-model');
       modelSel.innerHTML = '';
-      for (const m of (cfg.available_models || [])) {
+      const knownValues = _allModels.map(m => m.value);
+      // Legacy model not in list
+      if (cfg.model && !knownValues.includes(cfg.model)) {
         const o = document.createElement('option');
-        o.value = m; o.textContent = m;
-        if (m === cfg.gemini_model) o.selected = true;
+        o.value = cfg.model; o.textContent = `${cfg.model} (legacy)`; o.selected = true;
         modelSel.appendChild(o);
       }
-      // If current model isn't in list, add it
-      if (cfg.gemini_model && !cfg.available_models?.includes(cfg.gemini_model)) {
+      for (const m of _allModels) {
         const o = document.createElement('option');
-        o.value = cfg.gemini_model; o.textContent = cfg.gemini_model; o.selected = true;
-        modelSel.insertBefore(o, modelSel.firstChild);
+        o.value = m.value;
+        o.textContent = m.label;
+        if (m.value === cfg.model) o.selected = true;
+        modelSel.appendChild(o);
       }
-      document.getElementById('s-apikey').value   = cfg.gemini_api_key  || '';
-      document.getElementById('s-project').value  = cfg.google_cloud_project || '';
-      document.getElementById('s-region').value   = cfg.llm_location    || '';
-      document.getElementById('s-maxsteps').value = cfg.max_steps       ?? 100;
-      setAuthType(cfg.auth_type || 'vertex');
-      // Populate profiles
+      onModelChange();
+
+      // Google credentials
+      document.getElementById('s-apikey').value  = cfg.gemini_api_key       || '';
+      document.getElementById('s-project').value = cfg.google_cloud_project  || '';
+      document.getElementById('s-region').value  = cfg.llm_location          || '';
+      setGoogleAuth(cfg.google_auth_type || 'vertex');
+
+      // Other providers
+      document.getElementById('s-groq').value     = cfg.groq_api_key      || '';
+      document.getElementById('s-openai').value   = cfg.openai_api_key    || '';
+      document.getElementById('s-anthropic').value = cfg.anthropic_api_key || '';
+
+      // General
+      document.getElementById('s-maxsteps').value = cfg.max_steps ?? 100;
       profileSelect.innerHTML = '';
       for (const p of profileData.profiles) {
         const opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = p.label;
+        opt.value = p.id; opt.textContent = p.label;
         if (p.id === profileData.active) opt.selected = true;
         profileSelect.appendChild(opt);
       }
@@ -764,11 +748,14 @@
   async function saveSettings() {
     try {
       await post('/settings', {
-        auth_type:            _authType,
+        model:                document.getElementById('s-model').value,
+        google_auth_type:     _googleAuth,
         gemini_api_key:       document.getElementById('s-apikey').value.trim(),
         google_cloud_project: document.getElementById('s-project').value.trim(),
         llm_location:         document.getElementById('s-region').value.trim(),
-        gemini_model:         document.getElementById('s-model').value || 'gemini-2.0-flash',
+        groq_api_key:         document.getElementById('s-groq').value.trim(),
+        openai_api_key:       document.getElementById('s-openai').value.trim(),
+        anthropic_api_key:    document.getElementById('s-anthropic').value.trim(),
         max_steps:            parseInt(document.getElementById('s-maxsteps').value) || 100,
         browser_profile:      profileSelect.value,
       });
