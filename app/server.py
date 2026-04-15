@@ -137,6 +137,7 @@ async def get_settings():
 
 @app.post("/settings")
 async def post_settings(body: SettingsRequest):
+    global _agent
     if _agent and _agent.is_running:
         raise HTTPException(400, "Cannot change settings while agent is running.")
     s = UserSettings(
@@ -151,7 +152,6 @@ async def post_settings(body: SettingsRequest):
         anthropic_api_key    = body.anthropic_api_key,
     )
     save_settings(s)
-    global _agent
     _agent = ChatBrowserAgent()
     return {"status": "ok"}
 
