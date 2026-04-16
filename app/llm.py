@@ -91,6 +91,14 @@ def create_orchestrator_llm() -> BaseChatModel:
     return create_llm_for(model, s)
 
 
+def create_judge_llm() -> BaseChatModel:
+    """Create the security judge LLM.
+    Falls back to orchestrator_model, then agent model."""
+    s = load_settings()
+    model = s.judge_model or s.orchestrator_model or s.model or get_default_model()
+    return create_llm_for(model, s)
+
+
 def create_llm_for(model_value: str, s: UserSettings | None = None) -> BaseChatModel:
     """Create an LLM for a specific model value using current settings for credentials."""
     if s is None:

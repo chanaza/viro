@@ -261,6 +261,20 @@
   .settings-field input:focus, .settings-field select:focus { border-color: var(--accent); background: var(--surface); }
   .settings-field input[type="password"] { letter-spacing: 0.1em; }
   .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 400; color: var(--text); cursor: pointer; }
+  .s-section-collapsible { cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+  .s-section-collapsible:hover { color: var(--accent); }
+  .chevron { display: inline-block; transition: transform .2s; font-style: normal; }
+  .chevron.open { transform: rotate(90deg); }
+  .settings-field textarea { padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.82rem; font-family: inherit; background: var(--bg); color: var(--text); outline: none; resize: vertical; }
+  .settings-field textarea:focus { border-color: var(--accent); background: var(--surface); }
+  .msg-security-warning { background: #fff8e1; border: 1px solid #f59e0b; border-radius: 12px; padding: 14px 16px; margin: 8px 0; }
+  .msg-security-stop    { background: #fff0f0; border: 1px solid #ef4444; border-radius: 12px; padding: 14px 16px; margin: 8px 0; }
+  .security-title   { font-weight: 700; font-size: 0.88rem; margin-bottom: 6px; }
+  .security-detail  { font-size: 0.82rem; color: var(--text); opacity: .85; margin-bottom: 10px; line-height: 1.5; }
+  .security-actions { display: flex; gap: 8px; }
+  .security-actions button { padding: 6px 14px; border-radius: 8px; font-size: 0.82rem; cursor: pointer; border: none; }
+  .btn-sec-approve { background: var(--accent); color: #fff; }
+  .btn-sec-reject  { background: #ef4444; color: #fff; }
   .msg-queued { opacity: .75; }
   .queued-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--accent); color: #fff; border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
   #btn-reset { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
@@ -450,6 +464,35 @@
         </div>
       </div>
 
+      <!-- Security -->
+      <div>
+        <div class="s-section-title s-section-collapsible" onclick="toggleSecuritySection()">
+          <span>Advanced Security</span>
+          <span id="security-chevron" class="chevron">›</span>
+        </div>
+        <div id="security-section" class="hidden" style="margin-top:8px">
+          <div class="s-2col">
+            <div class="settings-field">
+              <label>Judge model <span style="font-weight:400;opacity:.6">(empty = same as orchestrator)</span></label>
+              <select id="s-judge-model"></select>
+            </div>
+            <div class="settings-field" style="align-self:end">
+              <div class="model-note" style="margin-top:4px">When both policy fields below are empty, the security judge is disabled. When active, each agent step calls the judge LLM — adds ~1–3 s per step.</div>
+            </div>
+          </div>
+          <div class="s-2col" style="margin-top:10px">
+            <div class="settings-field">
+              <label>Allowed actions <span style="font-weight:400;opacity:.6">(what the agent MAY do)</span></label>
+              <textarea id="s-allowed-actions" rows="3" placeholder="e.g. Search the web, read pages, extract data. Do not submit any forms."></textarea>
+            </div>
+            <div class="settings-field">
+              <label>Denied actions <span style="font-weight:400;opacity:.6">(what the agent must NOT do)</span></label>
+              <textarea id="s-denied-actions" rows="3" placeholder="e.g. Never submit forms, never click purchase or payment buttons."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
     <div class="settings-dialog-footer">
       <button id="btn-cancel-settings" onclick="closeSettings()">Cancel</button>
@@ -618,10 +661,12 @@
       if      (ev.type === 'step')    { addStep(ev.step, ev.goal, ev.action); }
       else if (ev.type === 'paused')  { setState('paused'); }
       else if (ev.type === 'resumed') { setState('running'); stepsGroup = null; }
-      else if (ev.type === 'queued')  { addQueuedMsg(ev.message); }
-      else if (ev.type === 'done')    { addAnswerMsg(ev.result, ev.answer_path, ev.log_path); setState('done'); es.close(); }
-      else if (ev.type === 'stopped') { setState('done'); es.close(); }
-      else if (ev.type === 'error')   { addErrorMsg(ev.message); setState('error'); es.close(); }
+      else if (ev.type === 'queued')           { addQueuedMsg(ev.message); }
+      else if (ev.type === 'security_warning') { addSecurityWarning(ev.goal, ev.action, ev.reason); setState('paused'); }
+      else if (ev.type === 'security_stop')    { addSecurityStop(ev.goal, ev.action, ev.reason); setState('done'); es.close(); }
+      else if (ev.type === 'done')             { addAnswerMsg(ev.result, ev.answer_path, ev.log_path); setState('done'); es.close(); }
+      else if (ev.type === 'stopped')          { setState('done'); es.close(); }
+      else if (ev.type === 'error')            { addErrorMsg(ev.message); setState('error'); es.close(); }
     };
     es.onerror = () => {
       if (state === 'running' || state === 'paused') setTimeout(startSSE, 2000);
@@ -693,6 +738,56 @@
       return r;
     })(),
   });
+
+  // ── Security ─────────────────────────────────────────────────────────────
+  function addSecurityWarning(goal, action, reason) {
+    const d = document.createElement('div');
+    d.className = 'msg-security-warning';
+    d.innerHTML =
+      `<div class="security-title">⚠️ Security Check — Human Approval Required</div>` +
+      `<div class="security-detail">` +
+        `<b>Goal:</b> ${goal || '(none)'}<br>` +
+        `<b>Action:</b> ${action || '(none)'}<br>` +
+        `<b>Reason:</b> ${reason || '(no reason given)'}` +
+      `</div>` +
+      `<div class="security-actions">` +
+        `<button class="btn-sec-approve" onclick="doSecurityApprove(this)">✓ Approve — continue</button>` +
+        `<button class="btn-sec-reject"  onclick="doSecurityReject(this)">✕ Reject — stop agent</button>` +
+      `</div>`;
+    chat.appendChild(d); scrollChat();
+  }
+
+  function addSecurityStop(goal, action, reason) {
+    const d = document.createElement('div');
+    d.className = 'msg-security-stop';
+    d.innerHTML =
+      `<div class="security-title">🛑 Agent Stopped — Security Policy Violation</div>` +
+      `<div class="security-detail">` +
+        `<b>Goal:</b> ${goal || '(none)'}<br>` +
+        `<b>Action:</b> ${action || '(none)'}<br>` +
+        `<b>Reason:</b> ${reason || '(no reason given)'}` +
+      `</div>`;
+    chat.appendChild(d); scrollChat();
+  }
+
+  async function doSecurityApprove(btn) {
+    btn.closest('.msg-security-warning').querySelectorAll('button').forEach(b => b.disabled = true);
+    try { await post('/security-approve', {}); setState('running'); }
+    catch(e) { addErrorMsg(e.message); }
+  }
+
+  async function doSecurityReject(btn) {
+    btn.closest('.msg-security-warning').querySelectorAll('button').forEach(b => b.disabled = true);
+    try { await post('/security-reject', {}); }
+    catch(e) { addErrorMsg(e.message); }
+  }
+
+  function toggleSecuritySection() {
+    const sec = document.getElementById('security-section');
+    const chev = document.getElementById('security-chevron');
+    sec.classList.toggle('hidden');
+    chev.classList.toggle('open');
+  }
 
   // ── Settings ─────────────────────────────────────────────────────────────
   let _allModels  = [];
@@ -767,6 +862,7 @@
 
       populateModelSelect('s-model', cfg.model, false);
       populateModelSelect('s-orchestrator-model', cfg.orchestrator_model || '', true);
+      populateModelSelect('s-judge-model', cfg.judge_model || '', true);
 
       // Credentials
       document.getElementById('s-apikey').value   = cfg.gemini_api_key       || '';
@@ -786,8 +882,15 @@
       document.getElementById('s-maxsteps').value = cfg.max_steps ?? 100;
       document.getElementById('s-flash').checked           = !!cfg.flash_mode;
       document.getElementById('s-headless').checked        = !!cfg.headless;
-      document.getElementById('s-allowed-domains').value   = cfg.allowed_domains   || '';
-      document.getElementById('s-prohibited-domains').value = cfg.prohibited_domains || '';
+      document.getElementById('s-allowed-domains').value    = cfg.allowed_domains    || '';
+      document.getElementById('s-prohibited-domains').value  = cfg.prohibited_domains  || '';
+      document.getElementById('s-allowed-actions').value     = cfg.allowed_actions     || '';
+      document.getElementById('s-denied-actions').value      = cfg.denied_actions      || '';
+      // Auto-expand security section if policy is set
+      if (cfg.allowed_actions || cfg.denied_actions || cfg.judge_model) {
+        document.getElementById('security-section').classList.remove('hidden');
+        document.getElementById('security-chevron').classList.add('open');
+      }
       const profileSelect = document.getElementById('profile-select');
       profileSelect.innerHTML = '';
       for (const p of profileData.profiles) {
@@ -812,6 +915,9 @@
         headless:            document.getElementById('s-headless').checked,
         allowed_domains:     document.getElementById('s-allowed-domains').value.trim(),
         prohibited_domains:  document.getElementById('s-prohibited-domains').value.trim(),
+        judge_model:         document.getElementById('s-judge-model').value,
+        allowed_actions:     document.getElementById('s-allowed-actions').value.trim(),
+        denied_actions:      document.getElementById('s-denied-actions').value.trim(),
         // always send all keys; server clears irrelevant ones based on google_auth_type
         google_auth_type:     _googleAuth,
         gemini_api_key:       document.getElementById('s-apikey').value.trim(),

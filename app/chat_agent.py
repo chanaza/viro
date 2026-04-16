@@ -9,7 +9,8 @@ from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
 from browser_use.llm.messages import UserMessage
 from app.config import MAX_FAILURES, MAX_ACTIONS_PER_STEP
-from app.llm import create_llm, create_orchestrator_llm
+from app.llm import create_llm, create_orchestrator_llm, create_judge_llm
+from app.security_judge import SecurityJudge, Verdict
 from app.profiles import get_active_profile
 from app.user_config import load_settings
 
@@ -97,6 +98,18 @@ class ChatBrowserAgent:
             allowed_domains=_parse_domains(s.allowed_domains),
             prohibited_domains=_parse_domains(s.prohibited_domains),
         )
+        # Security judge — only instantiated when policy fields are non-empty
+        if SecurityJudge.is_needed(s.allowed_actions, s.denied_actions):
+            self._judge: SecurityJudge | None = SecurityJudge(
+                llm=create_judge_llm(),
+                allowed_actions=s.allowed_actions,
+                denied_actions=s.denied_actions,
+            )
+        else:
+            self._judge = None
+        self._security_stop_reason: str | None = None   # set on CRITICAL verdict
+        self._pending_security:     tuple | None = None  # (goal, action) awaiting approval
+
         self._sys_ext:     str | None           = _load_system_extension()
         # Sensitive values are loaded once and passed ONLY to the browser-use Agent
         # via its sensitive_data parameter, which substitutes them at action-execution
@@ -134,17 +147,20 @@ class ChatBrowserAgent:
         if needs_browser:
             if sys.platform == "win32":
                 ctypes.windll.user32.AllowSetForegroundWindow(-1)
+            self._security_stop_reason = None
+            self._pending_security     = None
             self._agent = Agent(
                 task=self._build_task(task),
                 llm=self._agent_llm,
                 browser_profile=self._browser_profile,
                 register_new_step_callback=self._on_step,
                 register_done_callback=self._on_done,
+                register_should_stop_callback=self._should_stop if self._judge else None,
                 max_failures=MAX_FAILURES,
                 max_actions_per_step=MAX_ACTIONS_PER_STEP,
                 flash_mode=self._flash_mode,
                 save_conversation_path=str(self._conv_path),
-                extend_system_message=self._sys_ext,
+                extend_system_message=self._build_system_ext(),
                 sensitive_data=self._sensitive,
             )
             self._run_task = asyncio.create_task(self._run_loop())
@@ -169,6 +185,16 @@ class ChatBrowserAgent:
             })
         except Exception as e:
             await self.queue.put({"type": "error", "message": _friendly_error(e)})
+
+    def _build_system_ext(self) -> str | None:
+        """Merge system_extension.md rules with security policy for the agent's system prompt."""
+        parts = [self._sys_ext] if self._sys_ext else []
+        s = load_settings()
+        if s.allowed_actions.strip():
+            parts.append(f"ALLOWED actions policy:\n{s.allowed_actions.strip()}")
+        if s.denied_actions.strip():
+            parts.append(f"DENIED actions policy — never do these:\n{s.denied_actions.strip()}")
+        return "\n\n".join(parts) if parts else None
 
     def _build_task(self, current_msg: str) -> str:
         """Builds the full task string for orchestrator calls: system rules + conversation history + current message."""
@@ -264,6 +290,24 @@ class ChatBrowserAgent:
         self._steps_log.clear()
         self._pre_pause_url = None
 
+    async def _should_stop(self) -> bool:
+        """register_should_stop_callback — returns True after a CRITICAL verdict."""
+        return self._security_stop_reason is not None
+
+    def security_approve(self) -> None:
+        """User approved the pending security warning — record approval and resume."""
+        if self._judge and self._pending_security:
+            goal, action = self._pending_security
+            self._judge.approve(goal, action)
+        self._pending_security = None
+        # Use the normal resume path so the briefing is delivered
+        self.resume()
+
+    def security_reject(self) -> None:
+        """User rejected the pending security warning — stop the agent."""
+        self._pending_security = None
+        self.stop()
+
     @property
     def is_running(self) -> bool:
         return self._run_task is not None and not self._run_task.done()
@@ -285,6 +329,29 @@ class ChatBrowserAgent:
             "goal":   goal,
             "action": action_name,
         })
+
+        # Security judge — runs after LLM decision, before _execute_actions
+        if self._judge and not self._judge.is_approved(goal, action_name):
+            url = ""
+            try:
+                url = state.url or ""
+            except Exception:
+                pass
+            verdict, reason = await self._judge.evaluate(goal, action_name, url)
+            if verdict == Verdict.CRITICAL:
+                self._security_stop_reason = reason
+                await self.queue.put({
+                    "type": "security_stop", "reason": reason,
+                    "goal": goal, "action": action_name,
+                })
+                # _should_stop() will return True on next _check_stop_or_pause()
+            elif verdict == Verdict.WARNING:
+                self._pending_security = (goal, action_name)
+                self._agent.pause()
+                await self.queue.put({
+                    "type": "security_warning", "reason": reason,
+                    "goal": goal, "action": action_name,
+                })
 
     def _save_session(self, task: str, result: str) -> None:
         try:

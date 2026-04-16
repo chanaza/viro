@@ -129,6 +129,20 @@ async def reset():
     return {"status": "reset"}
 
 
+@app.post("/security-approve")
+async def security_approve():
+    _require_agent()
+    _agent.security_approve()
+    return {"status": "approved"}
+
+
+@app.post("/security-reject")
+async def security_reject():
+    _require_agent()
+    _agent.security_reject()
+    return {"status": "rejected"}
+
+
 # ── Models ────────────────────────────────────────────────────────────────────
 
 @app.get("/models")
@@ -161,6 +175,9 @@ async def post_settings(body: SettingsRequest):
         headless             = body.headless,
         allowed_domains      = body.allowed_domains,
         prohibited_domains   = body.prohibited_domains,
+        judge_model          = body.judge_model,
+        allowed_actions      = body.allowed_actions,
+        denied_actions       = body.denied_actions,
         gemini_api_key       = body.gemini_api_key       if body.google_auth_type == "apikey" else "",
         google_cloud_project = body.google_cloud_project if body.google_auth_type == "vertex" else "",
         llm_location         = body.llm_location         if body.google_auth_type == "vertex" else "",

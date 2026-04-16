@@ -20,6 +20,10 @@ class UserSettings(BaseModel):
     headless:             bool = False                 # run browser without a visible window
     allowed_domains:      str  = ""                    # comma-separated whitelist (empty = all)
     prohibited_domains:   str  = ""                    # comma-separated blacklist
+    # Security Judge (active only when allowed_actions or denied_actions is non-empty)
+    judge_model:          str  = ""     # empty → same as orchestrator_model
+    allowed_actions:      str  = ""     # free text: what the agent MAY do
+    denied_actions:       str  = ""     # free text: what the agent must NOT do
     # Google / Vertex AI
     gemini_api_key:       str  = ""
     google_cloud_project: str  = ""
@@ -47,6 +51,9 @@ def load_settings() -> UserSettings:
         headless             = data.get("headless",             defaults.headless),
         allowed_domains      = data.get("allowed_domains",      defaults.allowed_domains),
         prohibited_domains   = data.get("prohibited_domains",   defaults.prohibited_domains),
+        judge_model          = data.get("judge_model",          defaults.judge_model),
+        allowed_actions      = data.get("allowed_actions",      defaults.allowed_actions),
+        denied_actions       = data.get("denied_actions",       defaults.denied_actions),
         gemini_api_key       = data.get("gemini_api_key")       or os.getenv("GEMINI_API_KEY",       ""),
         google_cloud_project = data.get("google_cloud_project") or os.getenv("GOOGLE_CLOUD_PROJECT", ""),
         llm_location         = data.get("llm_location")         or os.getenv("LLM_LOCATION",         ""),
