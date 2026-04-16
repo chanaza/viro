@@ -27,12 +27,14 @@ MinVersion=10.0
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "..\app\*"; DestDir: "{app}\app"; Flags: ignoreversion recursesubdirs; Excludes: "__pycache__,*.pyc"
-Source: "..\run_app.py";     DestDir: "{app}"; Flags: ignoreversion
-Source: "requirements.txt";  DestDir: "{app}"; Flags: ignoreversion
-Source: "setup_install.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "viro.ico";          DestDir: "{app}"; Flags: ignoreversion
-Source: "launch.vbs";        DestDir: "{app}"; Flags: ignoreversion
+Source: "..\app\*";             DestDir: "{app}\app";    Flags: ignoreversion recursesubdirs; Excludes: "__pycache__,*.pyc"
+Source: "..\skills\*";          DestDir: "{app}\skills"; Flags: ignoreversion recursesubdirs; Excludes: "__pycache__,*.pyc"
+Source: "..\agent_service.py";  DestDir: "{app}";        Flags: ignoreversion
+Source: "..\run_app.py";        DestDir: "{app}";        Flags: ignoreversion
+Source: "..\requirements.txt";  DestDir: "{app}";        Flags: ignoreversion
+Source: "setup_install.ps1";    DestDir: "{app}";        Flags: ignoreversion
+Source: "viro.ico";             DestDir: "{app}";        Flags: ignoreversion
+Source: "launch.vbs";           DestDir: "{app}";        Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}";       Filename: "{sys}\wscript.exe"; Parameters: """{app}\launch.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\viro.ico"; Comment: "Launch Viro browser agent"

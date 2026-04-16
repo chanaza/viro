@@ -1,4 +1,8 @@
 browser-use
+playwright
+python-dotenv
+pyyaml
+fastapi
+uvicorn[standard]
 langchain-google-genai
 google-genai
-python-dotenv
