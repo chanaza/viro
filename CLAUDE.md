@@ -15,6 +15,8 @@
 ```
 researcher-agent/
 ├── agent_service.py        ← שכבת שירות: לוגיקת browser-use, async generator events
+├── config.py               ← קבועי סוכן: MAX_FAILURES, MAX_ACTIONS_PER_STEP, COLLECT_ALL
+├── security_judge.py       ← SecurityJudge, Verdict (ללא תלות ב-UI)
 ├── requirements.txt        ← תלויות מאוחדות לכל הפרויקט
 ├── run_app.py              ← מפעיל uvicorn + פותח Edge (ל-Viro בלבד)
 ├── .venv/                  ← venv יחיד לכל הפרויקט
@@ -36,8 +38,6 @@ researcher-agent/
 │   ├── chat_agent.py       ← thin wrapper: AgentService + session log + history
 │   ├── llm.py              ← create_llm(), create_orchestrator_llm()
 │   ├── profiles.py         ← get_active_profile()
-│   ├── config.py           ← MAX_FAILURES, MAX_ACTIONS_PER_STEP, COLLECT_ALL
-│   ├── security_judge.py   ← SecurityJudge, Verdict
 │   ├── user_config.py      ← load_settings(), allowed/denied actions
 │   └── static/index.html   ← Chat UI (vanilla JS + SSE)
 │

@@ -23,7 +23,7 @@ from browser_use.llm.messages import SystemMessage, UserMessage
 from agent_service import AgentService, _friendly_error
 from app.llm import create_llm, create_orchestrator_llm, create_judge_llm
 from app.profiles import get_active_profile
-from app.security_judge import SecurityJudge
+from security_judge import SecurityJudge
 from skills import SkillRegistry
 from app.user_config import load_settings
 

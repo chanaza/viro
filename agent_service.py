@@ -17,8 +17,8 @@ from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile
 from browser_use.llm.messages import SystemMessage, UserMessage
 
-from app.config import MAX_FAILURES, MAX_ACTIONS_PER_STEP, COLLECT_ALL
-from app.security_judge import SecurityJudge, Verdict
+from config import MAX_FAILURES, MAX_ACTIONS_PER_STEP, COLLECT_ALL
+from security_judge import SecurityJudge, Verdict
 from skills import SkillMatch, SkillRegistry
 
 _DEFAULT_SKILL_OUTPUT_DIR   = Path.home() / ".viro" / "output"    # user-facing skill results (CSV etc.)
