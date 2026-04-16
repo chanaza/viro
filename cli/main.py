@@ -1,10 +1,10 @@
 """CLI entry point — runs a skill directly, without the Viro UI.
 
-Depends on app/ (AgentService, skills, llm, profiles, config).
-Does NOT depend on browser-use/src/ (legacy, kept for reference only).
+Depends on agent_service.py, skills/, app/ (llm, profiles, config).
+Does NOT depend on legacy/src/ (kept for reference only).
 
 Usage:
-    SUBJECT="שופרסל" browser-use/.venv/Scripts/python.exe browser-use/main.py
+    SUBJECT="שופרסל" .venv/Scripts/python.exe cli/main.py
 
 Environment variables (via .env or shell):
     SUBJECT      — skill subject parameter (default: שופרסל)
