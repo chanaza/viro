@@ -112,9 +112,21 @@ async def stop():
 
 @app.post("/send")
 async def send(body: SendRequest):
-    _require_agent()
+    if not _agent:
+        raise HTTPException(400, "No active session. Start one first.")
+    # Allow send while paused (queues) or running (injects). Not while idle/done.
+    if not _agent.is_running and not (_agent._agent and _agent._agent.state.paused):
+        raise HTTPException(400, "Agent is not running. Start a new session.")
     _agent.send(body.message)
     return {"status": "sent"}
+
+
+@app.post("/reset")
+async def reset():
+    global _agent
+    if _agent:
+        _agent.reset()
+    return {"status": "reset"}
 
 
 # ── Models ────────────────────────────────────────────────────────────────────

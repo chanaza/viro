@@ -261,6 +261,11 @@
   .settings-field input:focus, .settings-field select:focus { border-color: var(--accent); background: var(--surface); }
   .settings-field input[type="password"] { letter-spacing: 0.1em; }
   .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 400; color: var(--text); cursor: pointer; }
+  .msg-queued { opacity: .75; }
+  .queued-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--accent); color: #fff; border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
+  #btn-reset { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+  #btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+  textarea:disabled { opacity: .45; cursor: not-allowed; }
   .model-note { font-size: 0.72rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
 
   /* Credential block — shown dynamically */
@@ -460,6 +465,7 @@
     <button id="btn-pause"  onclick="doPause()"  disabled>⏸ Pause</button>
     <button id="btn-resume" onclick="doResume()" disabled>▶ Resume</button>
     <button id="btn-stop"   onclick="doStop()"   disabled>⏹ Stop</button>
+    <button id="btn-reset"  onclick="doReset()">↺ Reset</button>
   </div>
   <div id="input-row">
     <textarea id="task-input" rows="2" placeholder="Describe a task... (Enter to send)"></textarea>
@@ -492,10 +498,27 @@
     dot.className = s;
     const labels = { idle: 'Ready', running: 'Running', paused: 'Paused', done: 'Done', error: 'Error' };
     statusLbl.textContent = labels[s] || s;
+
     btnPause.disabled  = s !== 'running';
     btnResume.disabled = s !== 'paused';
-    btnStop.disabled   = s === 'idle' || s === 'done';
-    btnSend.textContent = s === 'idle' || s === 'done' ? 'Send' : 'Add instruction';
+    btnStop.disabled   = s === 'idle' || s === 'done' || s === 'error';
+
+    // Input: disabled while running; enabled otherwise
+    input.disabled = s === 'running';
+
+    if (s === 'running') {
+      input.placeholder = 'Agent is running… Pause to add instructions.';
+      btnSend.textContent = 'Send';
+      btnSend.disabled = true;
+    } else if (s === 'paused') {
+      input.placeholder = 'Add instructions for when agent resumes (Enter to queue)';
+      btnSend.textContent = 'Queue';
+      btnSend.disabled = false;
+    } else {
+      input.placeholder = 'Describe a task… (Enter to send)';
+      btnSend.textContent = 'Send';
+      btnSend.disabled = false;
+    }
   }
 
   // ── Chat messages ────────────────────────────────────────────────────────
@@ -523,6 +546,13 @@
   function addErrorMsg(text) {
     const d = document.createElement('div');
     d.className = 'msg-error'; d.textContent = text;
+    chat.appendChild(d); scrollChat();
+  }
+
+  function addQueuedMsg(text) {
+    const d = document.createElement('div');
+    d.className = 'msg-user msg-queued';
+    d.innerHTML = `${text} <span class="queued-badge">queued</span>`;
     chat.appendChild(d); scrollChat();
   }
 
@@ -587,9 +617,10 @@
       if (ev.type === 'ping') return;
       if      (ev.type === 'step')    { addStep(ev.step, ev.goal, ev.action); }
       else if (ev.type === 'paused')  { setState('paused'); }
-      else if (ev.type === 'resumed') { setState('running'); }
+      else if (ev.type === 'resumed') { setState('running'); stepsGroup = null; }
+      else if (ev.type === 'queued')  { addQueuedMsg(ev.message); }
       else if (ev.type === 'done')    { addAnswerMsg(ev.result, ev.answer_path, ev.log_path); setState('done'); es.close(); }
-      else if (ev.type === 'stopped') { addErrorMsg('Agent stopped.'); setState('idle'); es.close(); }
+      else if (ev.type === 'stopped') { setState('done'); es.close(); }
       else if (ev.type === 'error')   { addErrorMsg(ev.message); setState('error'); es.close(); }
     };
     es.onerror = () => {
@@ -602,25 +633,54 @@
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
-    addUserMsg(text);
     try {
       if (state === 'idle' || state === 'done' || state === 'error') {
+        addUserMsg(text);
         await post('/start', { task: text }); setState('running'); startSSE();
-      } else {
+      } else if (state === 'paused') {
+        // Queue: show immediately with badge; backend queues for resume
+        await post('/send', { message: text });
+        // addQueuedMsg is triggered by SSE 'queued' event from server
+      } else if (state === 'running') {
+        addUserMsg(text);
         await post('/send', { message: text });
       }
     } catch(e) { addErrorMsg(e.message); }
   }
 
-  async function doPause()  { try { await post('/pause');  setState('paused');   } catch(e) { addErrorMsg(e.message); } }
-  async function doResume() {
-    const text = input.value.trim();
-    if (text) { doSend(); }
-    else { try { await post('/resume'); setState('running'); } catch(e) { addErrorMsg(e.message); } }
+  async function doPause()  {
+    try { await post('/pause'); } catch(e) { addErrorMsg(e.message); }
+    // setState('paused') triggered by SSE
   }
+
+  async function doResume() {
+    // Flush any text in the input box as a queued message before resuming
+    const text = input.value.trim();
+    if (text) {
+      input.value = '';
+      try { await post('/send', { message: text }); } catch(e) { /* ignore, resume anyway */ }
+    }
+    try { await post('/resume'); } catch(e) { addErrorMsg(e.message); }
+    // setState('running') triggered by SSE
+  }
+
   async function doStop() {
     btnStop.disabled = true;
     try { await post('/stop'); } catch(e) { addErrorMsg(e.message); btnStop.disabled = false; }
+    // setState('done') triggered by SSE 'stopped' event
+  }
+
+  async function doReset() {
+    if (state === 'running' || state === 'paused') {
+      if (!confirm('Reset will stop the current session. Continue?')) return;
+    }
+    try {
+      await post('/reset', {});
+      chat.innerHTML = '';
+      stepsGroup = null;
+      if (es) { es.close(); es = null; }
+      setState('idle');
+    } catch(e) { addErrorMsg(e.message); }
   }
 
   // ── Marked ───────────────────────────────────────────────────────────────

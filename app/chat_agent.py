@@ -102,17 +102,19 @@ class ChatBrowserAgent:
         # via its sensitive_data parameter, which substitutes them at action-execution
         # time — the LLM never sees the actual values, only {key} placeholders.
         # The orchestrator LLM intentionally receives no sensitive_data at all.
-        self._sensitive:   dict | None         = _load_sensitive_data()
-        self._flash_mode:  bool                = s.flash_mode
-        self._max_steps:   int                 = s.max_steps
-        self._agent:       Agent | None        = None
-        self._run_task:    asyncio.Task | None = None
-        self.queue:        asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
-        self._history:     list[dict]          = []               # [{role, content}, ...]
-        self._steps_log:   list[dict]          = []               # [{step, goal, action}, ...]
-        self._answer_path: Path | None         = None
-        self._log_path:    Path | None         = None
-        self._conv_path:   Path | None         = None             # full LLM conversation dump
+        self._sensitive:        dict | None         = _load_sensitive_data()
+        self._flash_mode:       bool                = s.flash_mode
+        self._max_steps:        int                 = s.max_steps
+        self._agent:            Agent | None        = None
+        self._run_task:         asyncio.Task | None = None
+        self.queue:             asyncio.Queue       = asyncio.Queue()  # outgoing SSE events
+        self._history:          list[dict]          = []               # [{role, content}, ...]
+        self._steps_log:        list[dict]          = []               # [{step, goal, action}, ...]
+        self._pending_messages: list[str]           = []               # queued while paused
+        self._pre_pause_url:    str | None          = None             # URL at time of pause
+        self._answer_path:      Path | None         = None
+        self._log_path:         Path | None         = None
+        self._conv_path:        Path | None         = None             # full LLM conversation dump
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -198,26 +200,69 @@ class ChatBrowserAgent:
 
     def pause(self) -> None:
         if self._agent:
+            # Capture URL so the resume briefing can mention where we paused
+            try:
+                self._pre_pause_url = self._agent.browser_session.state.url
+            except Exception:
+                self._pre_pause_url = None
             self._agent.pause()
             asyncio.create_task(self.queue.put({"type": "paused"}))
 
     def resume(self) -> None:
         if self._agent:
-            self._agent.resume()
+            was_paused = self._agent.state.paused
+
+            # Build resume briefing so agent re-orients to current browser state
+            parts = ["[PAUSE RESUMED]"]
+            if self._pre_pause_url:
+                parts.append(f"You were paused at: {self._pre_pause_url}")
+            parts.append(
+                "The user may have interacted with the browser during the pause. "
+                "Take a fresh screenshot and assess the current state before proceeding."
+            )
+            if self._pending_messages:
+                parts.append("\nUser instructions added during pause:")
+                for msg in self._pending_messages:
+                    parts.append(f"  - {msg}")
+                self._pending_messages.clear()
+
+            briefing = "\n".join(parts)
+            # add_new_task sets paused=False internally but does NOT unblock the
+            # asyncio event — resume() is required to set _external_pause_event.
+            self._agent.add_new_task(briefing)
+            if was_paused:
+                self._agent.resume()  # unblocks _external_pause_event.wait()
+
+            self._pre_pause_url = None
             asyncio.create_task(self.queue.put({"type": "resumed"}))
 
     def stop(self) -> None:
         if self._agent:
             self._agent.stop()
-            if self._agent.state.paused:
-                self._agent.resume()  # unblock so run() can exit
-
-    def send(self, message: str) -> None:
-        if self._agent and not self._run_task.done():
-            self._history.append({"role": "user", "content": message})
-            self._agent.add_new_task(message)
+            # If paused, unblock the event loop so the stopped flag is checked
             if self._agent.state.paused:
                 self._agent.resume()
+
+    def send(self, message: str) -> None:
+        """Send a message. If paused: queues it for the next resume. If running: injects immediately."""
+        if not self._agent or not self._run_task or self._run_task.done():
+            return
+        self._history.append({"role": "user", "content": message})
+        if self._agent.state.paused:
+            # Queue — will be delivered as part of the resume briefing
+            self._pending_messages.append(message)
+            asyncio.create_task(self.queue.put({"type": "queued", "message": message}))
+        else:
+            self._agent.add_new_task(message)
+
+    def reset(self) -> None:
+        """Clear conversation history. Stop the agent first if running."""
+        if self._agent and self.is_running:
+            self.stop()
+        self._history.clear()
+        self._pending_messages.clear()
+        self._steps_log.clear()
+        self._pre_pause_url = None
 
     @property
     def is_running(self) -> bool:
