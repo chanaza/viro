@@ -13,6 +13,7 @@ from app.llm import create_llm, create_orchestrator_llm, create_judge_llm
 from app.security_judge import SecurityJudge, Verdict
 from app.profiles import get_active_profile
 from app.user_config import load_settings
+from app.skills import branches_skill
 
 _SESSIONS_DIR  = Path.home() / ".viro" / "sessions"
 _CONFIG_DIR    = Path(__file__).parent / "config"
@@ -181,6 +182,7 @@ class ChatBrowserAgent:
                 save_conversation_path=str(self._conv_path),
                 extend_system_message=self._build_system_ext(),
                 sensitive_data=self._sensitive,
+                skills=[branches_skill]
             )
             self._run_task = asyncio.create_task(self._run_loop())
         else:
@@ -353,12 +355,16 @@ class ChatBrowserAgent:
         if self._judge and self._pending_security:
             goal, action = self._pending_security
             self._judge.approve(goal, action)
+            self._steps_log.append({"type": "security_approved", "goal": goal, "action": action})
         self._pending_security = None
         # Use the normal resume path so the briefing is delivered
         self.resume()
 
     def security_reject(self) -> None:
         """User rejected the pending security warning — stop the agent."""
+        if self._pending_security:
+            goal, action = self._pending_security
+            self._steps_log.append({"type": "security_rejected", "goal": goal, "action": action})
         self._pending_security = None
         self.stop()
 
@@ -376,7 +382,7 @@ class ChatBrowserAgent:
         except Exception:
             action_name, goal = "", ""
 
-        self._steps_log.append({"step": step_num, "goal": goal, "action": action_name})
+        self._steps_log.append({"type": "step", "step": step_num, "goal": goal, "action": action_name})
         await self.queue.put({
             "type":   "step",
             "step":   step_num,
@@ -394,6 +400,10 @@ class ChatBrowserAgent:
             verdict, reason = await self._judge.evaluate(goal, action_name, url)
             if verdict == Verdict.CRITICAL:
                 self._security_stop_reason = reason
+                self._steps_log.append({
+                    "type": "security_stop", "step": step_num,
+                    "goal": goal, "action": action_name, "reason": reason,
+                })
                 await self.queue.put({
                     "type": "security_stop", "reason": reason,
                     "goal": goal, "action": action_name,
@@ -401,6 +411,10 @@ class ChatBrowserAgent:
                 # _should_stop() will return True on next _check_stop_or_pause()
             elif verdict == Verdict.WARNING:
                 self._pending_security = (goal, action_name)
+                self._steps_log.append({
+                    "type": "security_warning", "step": step_num,
+                    "goal": goal, "action": action_name, "reason": reason,
+                })
                 self._agent.pause()
                 await self.queue.put({
                     "type": "security_warning", "reason": reason,
@@ -419,9 +433,31 @@ class ChatBrowserAgent:
                 lines = [f"# Viro Log — {ts}", "", "## Task", task, ""]
                 if self._steps_log:
                     lines += ["## Steps", ""]
-                    for s in self._steps_log:
-                        action = f" → `{s['action']}`" if s.get("action") else ""
-                        lines.append(f"{s['step']}. {s['goal']}{action}")
+                    for e in self._steps_log:
+                        t = e.get("type", "step")
+                        if t == "step":
+                            action = f" → `{e['action']}`" if e.get("action") else ""
+                            lines.append(f"{e['step']}. {e['goal']}{action}")
+                        elif t == "security_warning":
+                            lines.append(
+                                f"  ⚠️  SECURITY WARNING (step {e['step']}): {e['reason']}"
+                                f" — goal: {e['goal']}, action: {e['action']}"
+                            )
+                        elif t == "security_approved":
+                            lines.append(
+                                f"  ✓  Security warning APPROVED by user"
+                                f" — goal: {e['goal']}, action: {e['action']}"
+                            )
+                        elif t == "security_rejected":
+                            lines.append(
+                                f"  ✕  Security warning REJECTED by user — agent stopped"
+                                f" — goal: {e['goal']}, action: {e['action']}"
+                            )
+                        elif t == "security_stop":
+                            lines.append(
+                                f"  🛑  SECURITY STOP (step {e['step']}): {e['reason']}"
+                                f" — goal: {e['goal']}, action: {e['action']}"
+                            )
                     lines.append("")
                 self._log_path.write_text("\n".join(lines), encoding="utf-8")
         except Exception:
