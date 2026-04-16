@@ -267,6 +267,10 @@
   .chevron.open { transform: rotate(90deg); }
   .settings-field textarea { padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.82rem; font-family: inherit; background: var(--bg); color: var(--text); outline: none; resize: vertical; }
   .settings-field textarea:focus { border-color: var(--accent); background: var(--surface); }
+  .msg-browser-open { background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.82rem; color: #1e40af; }
+  .msg-browser-open span { flex: 1; }
+  #btn-close-browser { padding: 5px 14px; background: #1d4ed8; color: #fff; border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+  #btn-close-browser:hover { background: #1e3a8a; }
   .msg-security-warning { background: #fff8e1; border: 1px solid #f59e0b; border-radius: 12px; padding: 14px 16px; margin: 8px 0; }
   .msg-security-stop    { background: #fff0f0; border: 1px solid #ef4444; border-radius: 12px; padding: 14px 16px; margin: 8px 0; }
   .security-title   { font-weight: 700; font-size: 0.88rem; margin-bottom: 6px; }
@@ -450,6 +454,10 @@
           <div class="settings-field">
             <label>Headless <span style="font-weight:400;opacity:.6">(no visible browser)</span></label>
             <label class="toggle-label"><input id="s-headless" type="checkbox"> Enable</label>
+          </div>
+          <div class="settings-field" style="grid-column:1/-1">
+            <label>Keep browser open <span style="font-weight:400;opacity:.6">(always keep open after task; when off, agent decides)</span></label>
+            <label class="toggle-label"><input id="s-keep-browser-open" type="checkbox"> Always keep open</label>
           </div>
         </div>
         <div class="s-2col" style="margin-top:8px">
@@ -664,7 +672,7 @@
       else if (ev.type === 'queued')           { addQueuedMsg(ev.message); }
       else if (ev.type === 'security_warning') { addSecurityWarning(ev.goal, ev.action, ev.reason); setState('paused'); }
       else if (ev.type === 'security_stop')    { addSecurityStop(ev.goal, ev.action, ev.reason); setState('done'); es.close(); }
-      else if (ev.type === 'done')             { addAnswerMsg(ev.result, ev.answer_path, ev.log_path); setState('done'); es.close(); }
+      else if (ev.type === 'done')             { addAnswerMsg(ev.result, ev.answer_path, ev.log_path); if (ev.browser_open) showBrowserOpen(); setState('done'); es.close(); }
       else if (ev.type === 'stopped')          { setState('done'); es.close(); }
       else if (ev.type === 'error')            { addErrorMsg(ev.message); setState('error'); es.close(); }
     };
@@ -723,6 +731,7 @@
       await post('/reset', {});
       chat.innerHTML = '';
       stepsGroup = null;
+      _browserOpenBanner = null;
       if (es) { es.close(); es = null; }
       setState('idle');
     } catch(e) { addErrorMsg(e.message); }
@@ -780,6 +789,34 @@
     btn.closest('.msg-security-warning').querySelectorAll('button').forEach(b => b.disabled = true);
     try { await post('/security-reject', {}); }
     catch(e) { addErrorMsg(e.message); }
+  }
+
+  // ── Browser-open banner ──────────────────────────────────────────────────
+  let _browserOpenBanner = null;
+
+  function showBrowserOpen() {
+    if (_browserOpenBanner) return;
+    const d = document.createElement('div');
+    d.className = 'msg-browser-open';
+    d.id = 'browser-open-banner';
+    d.innerHTML =
+      `<span>🌐 Browser is open — you can continue interacting with it directly.</span>` +
+      `<button id="btn-close-browser" onclick="doCloseBrowser()">Close browser</button>`;
+    chat.appendChild(d);
+    _browserOpenBanner = d;
+    scrollChat();
+  }
+
+  async function doCloseBrowser() {
+    const btn = document.getElementById('btn-close-browser');
+    if (btn) btn.disabled = true;
+    try {
+      await post('/close-browser', {});
+      if (_browserOpenBanner) { _browserOpenBanner.remove(); _browserOpenBanner = null; }
+    } catch(e) {
+      addErrorMsg(e.message);
+      if (btn) btn.disabled = false;
+    }
   }
 
   function toggleSecuritySection() {
@@ -880,8 +917,9 @@
 
       // General
       document.getElementById('s-maxsteps').value = cfg.max_steps ?? 100;
-      document.getElementById('s-flash').checked           = !!cfg.flash_mode;
-      document.getElementById('s-headless').checked        = !!cfg.headless;
+      document.getElementById('s-flash').checked             = !!cfg.flash_mode;
+      document.getElementById('s-headless').checked          = !!cfg.headless;
+      document.getElementById('s-keep-browser-open').checked = !!cfg.keep_browser_open;
       document.getElementById('s-allowed-domains').value    = cfg.allowed_domains    || '';
       document.getElementById('s-prohibited-domains').value  = cfg.prohibited_domains  || '';
       document.getElementById('s-allowed-actions').value     = cfg.allowed_actions     || '';
@@ -913,6 +951,7 @@
         flash_mode:          document.getElementById('s-flash').checked,
         browser_profile:     document.getElementById('profile-select').value,
         headless:            document.getElementById('s-headless').checked,
+        keep_browser_open:   document.getElementById('s-keep-browser-open').checked,
         allowed_domains:     document.getElementById('s-allowed-domains').value.trim(),
         prohibited_domains:  document.getElementById('s-prohibited-domains').value.trim(),
         judge_model:         document.getElementById('s-judge-model').value,

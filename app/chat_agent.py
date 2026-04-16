@@ -7,7 +7,7 @@ from pathlib import Path
 
 from browser_use import Agent
 from browser_use.browser.profile import BrowserProfile, ViewportSize
-from browser_use.llm.messages import UserMessage
+from browser_use.llm.messages import SystemMessage, UserMessage
 from app.config import MAX_FAILURES, MAX_ACTIONS_PER_STEP
 from app.llm import create_llm, create_orchestrator_llm, create_judge_llm
 from app.security_judge import SecurityJudge, Verdict
@@ -44,6 +44,24 @@ def _load_sensitive_data() -> dict[str, str] | None:
     except FileNotFoundError:
         return None
 
+
+_KEEP_BROWSER_PROMPT = """\
+A browser automation task has just completed. Decide whether the browser should stay open.
+
+Keep open (YES) if: the result is something the user will likely want to act on directly \
+in the browser — a filled cart, a product page, a booking form, a recommendation page, \
+a course to purchase, or any page requiring a follow-up action by the user.
+
+Close (NO) if: the task was purely informational — research, data extraction, answering a \
+question — and the result has been delivered as text. No browser interaction is needed.
+
+When in doubt, answer YES.
+
+Task: {task}
+Result summary: {result}
+
+Reply with exactly one word: YES or NO.
+"""
 
 _ROUTER_PROMPT = """\
 Decide if answering the following request requires browsing the web or not.
@@ -110,6 +128,7 @@ class ChatBrowserAgent:
         self._security_stop_reason: str | None = None   # set on CRITICAL verdict
         self._pending_security:     tuple | None = None  # (goal, action) awaiting approval
 
+        self._keep_browser_open: bool           = s.keep_browser_open
         self._sys_ext:     str | None           = _load_system_extension()
         # Sensitive values are loaded once and passed ONLY to the browser-use Agent
         # via its sensitive_data parameter, which substitutes them at action-execution
@@ -150,7 +169,7 @@ class ChatBrowserAgent:
             self._security_stop_reason = None
             self._pending_security     = None
             self._agent = Agent(
-                task=self._build_task(task),
+                task=self._build_agent_task(task),
                 llm=self._agent_llm,
                 browser_profile=self._browser_profile,
                 register_new_step_callback=self._on_step,
@@ -167,14 +186,25 @@ class ChatBrowserAgent:
         else:
             self._run_task = asyncio.create_task(self._answer_directly(task))
 
+    def _system_msg(self) -> SystemMessage | None:
+        """System message carrying Viro's identity and rules for orchestrator LLM calls."""
+        return SystemMessage(content=self._sys_ext) if self._sys_ext else None
+
     async def _needs_browser(self, task: str) -> bool:
-        prompt = _ROUTER_PROMPT.format(task=self._build_task(task))
-        response = await self._orchestrator_llm.ainvoke([UserMessage(content=prompt)])
+        messages = []
+        if self._system_msg():
+            messages.append(self._system_msg())
+        messages.append(UserMessage(content=_ROUTER_PROMPT.format(task=self._build_conversation(task))))
+        response = await self._orchestrator_llm.ainvoke(messages)
         return "BROWSE" in response.completion.upper()
 
     async def _answer_directly(self, task: str) -> None:
         try:
-            response = await self._orchestrator_llm.ainvoke([UserMessage(content=self._build_task(task))])
+            messages = []
+            if self._system_msg():
+                messages.append(self._system_msg())
+            messages.append(UserMessage(content=self._build_conversation(task)))
+            response = await self._orchestrator_llm.ainvoke(messages)
             result = response.completion
             self._history.append({"role": "assistant", "content": result})
             self._save_session(task, result)
@@ -187,7 +217,7 @@ class ChatBrowserAgent:
             await self.queue.put({"type": "error", "message": _friendly_error(e)})
 
     def _build_system_ext(self) -> str | None:
-        """Merge system_extension.md rules with security policy for the agent's system prompt."""
+        """Merge system_extension.md rules with security policy for the agent's extend_system_message."""
         parts = [self._sys_ext] if self._sys_ext else []
         s = load_settings()
         if s.allowed_actions.strip():
@@ -196,18 +226,22 @@ class ChatBrowserAgent:
             parts.append(f"DENIED actions policy — never do these:\n{s.denied_actions.strip()}")
         return "\n\n".join(parts) if parts else None
 
-    def _build_task(self, current_msg: str) -> str:
-        """Builds the full task string for orchestrator calls: system rules + conversation history + current message."""
-        parts = [self._sys_ext] if self._sys_ext else []
+    def _build_conversation(self, current_msg: str) -> str:
+        """Builds conversation context for orchestrator UserMessage (without system identity)."""
+        parts = []
         prior = self._history[:-1]  # all turns before the current one
         if prior:
-            parts.append("\n--- Conversation so far ---")
+            parts.append("--- Conversation so far ---")
             for turn in prior:
                 label = "User" if turn["role"] == "user" else "Assistant"
                 parts.append(f"{label}: {turn['content']}")
             parts.append("--- End of conversation ---\n")
         parts.append(f"User: {current_msg}")
         return "\n".join(parts)
+
+    def _build_agent_task(self, current_msg: str) -> str:
+        """Builds the task string for the browser Agent (conversation context only — identity is in extend_system_message)."""
+        return self._build_conversation(current_msg)
 
     async def _run_loop(self) -> None:
         try:
@@ -217,10 +251,30 @@ class ChatBrowserAgent:
         except Exception as e:
             await self.queue.put({"type": "error", "message": _friendly_error(e)})
         finally:
+            # keep_alive was set on BrowserProfile — agent.close() respects it.
+            # We explicitly close only if keep_alive=False (already the default behavior).
             try:
                 await self._agent.close()
             except Exception:
                 pass
+
+    async def _decide_keep_browser(self, task: str, result: str) -> bool:
+        """Ask the orchestrator LLM whether to keep the browser open after this task."""
+        if self._keep_browser_open:
+            return True
+        prompt = _KEEP_BROWSER_PROMPT.format(
+            task=task,
+            result=(result or "")[:500],   # truncate long results
+        )
+        try:
+            messages = []
+            if self._system_msg():
+                messages.append(self._system_msg())
+            messages.append(UserMessage(content=prompt))
+            response = await self._orchestrator_llm.ainvoke(messages)
+            return "YES" in response.completion.upper()
+        except Exception:
+            return True   # on failure, keep open (safer)
 
     # ── Control ───────────────────────────────────────────────────────────────
 
@@ -377,9 +431,28 @@ class ChatBrowserAgent:
         result = history.final_result() if history else ""
         if result:
             self._history.append({"role": "assistant", "content": result})
-        self._save_session(self._history[0]["content"] if self._history else "", result or "")
+        task = self._history[0]["content"] if self._history else ""
+        self._save_session(task, result or "")
+
+        # Ask the orchestrator whether to keep the browser open, then set keep_alive
+        # before _run_loop's finally block calls agent.close()
+        keep_open = await self._decide_keep_browser(task, result or "")
+        try:
+            self._agent.browser_session.browser_profile.keep_alive = keep_open
+        except Exception:
+            keep_open = False
+
         await self.queue.put({
             "type": "done", "result": result or "",
+            "browser_open": keep_open,
             "answer_path": str(self._answer_path) if self._answer_path else "",
             "log_path":    str(self._log_path)    if self._log_path    else "",
         })
+
+    async def close_browser(self) -> None:
+        """Close the browser window that was kept open after task completion."""
+        if self._agent and self._agent.browser_session:
+            try:
+                await self._agent.browser_session.kill()
+            except Exception:
+                pass

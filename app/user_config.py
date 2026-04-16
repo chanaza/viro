@@ -18,6 +18,7 @@ class UserSettings(BaseModel):
     # Browser
     browser_profile:      str  = "viro"
     headless:             bool = False                 # run browser without a visible window
+    keep_browser_open:    bool = False                 # always keep browser open after done (overrides agent decision)
     allowed_domains:      str  = ""                    # comma-separated whitelist (empty = all)
     prohibited_domains:   str  = ""                    # comma-separated blacklist
     # Security Judge (active only when allowed_actions or denied_actions is non-empty)
@@ -49,6 +50,7 @@ def load_settings() -> UserSettings:
         flash_mode           = data.get("flash_mode",           defaults.flash_mode),
         browser_profile      = data.get("browser_profile",      defaults.browser_profile),
         headless             = data.get("headless",             defaults.headless),
+        keep_browser_open    = data.get("keep_browser_open",    defaults.keep_browser_open),
         allowed_domains      = data.get("allowed_domains",      defaults.allowed_domains),
         prohibited_domains   = data.get("prohibited_domains",   defaults.prohibited_domains),
         judge_model          = data.get("judge_model",          defaults.judge_model),

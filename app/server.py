@@ -129,6 +129,14 @@ async def reset():
     return {"status": "reset"}
 
 
+@app.post("/close-browser")
+async def close_browser_endpoint():
+    if not _agent:
+        raise HTTPException(400, "No active session.")
+    await _agent.close_browser()
+    return {"status": "closed"}
+
+
 @app.post("/security-approve")
 async def security_approve():
     _require_agent()
@@ -173,6 +181,7 @@ async def post_settings(body: SettingsRequest):
         flash_mode           = body.flash_mode,
         browser_profile      = body.browser_profile,
         headless             = body.headless,
+        keep_browser_open    = body.keep_browser_open,
         allowed_domains      = body.allowed_domains,
         prohibited_domains   = body.prohibited_domains,
         judge_model          = body.judge_model,
