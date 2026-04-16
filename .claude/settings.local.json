@@ -1,9 +1,5 @@
 {
   "permissions": {
-    "deny": [
-      "Read(app/config/sensitive_data.json)",
-      "Edit(app/config/sensitive_data.json)"
-    ],
     "allow": [
       "Bash(npm run:*)",
       "Bash(powershell.exe -Command \"where.exe npm\")",

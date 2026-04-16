@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(app/config/sensitive_data.json)",
+      "Edit(app/config/sensitive_data.json)"
+    ]
+  }
+}
