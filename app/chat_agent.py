@@ -98,6 +98,11 @@ class ChatBrowserAgent:
             prohibited_domains=_parse_domains(s.prohibited_domains),
         )
         self._sys_ext:     str | None           = _load_system_extension()
+        # Sensitive values are loaded once and passed ONLY to the browser-use Agent
+        # via its sensitive_data parameter, which substitutes them at action-execution
+        # time — the LLM never sees the actual values, only {key} placeholders.
+        # The orchestrator LLM intentionally receives no sensitive_data at all.
+        self._sensitive:   dict | None         = _load_sensitive_data()
         self._flash_mode:  bool                = s.flash_mode
         self._max_steps:   int                 = s.max_steps
         self._agent:       Agent | None        = None
@@ -138,7 +143,7 @@ class ChatBrowserAgent:
                 flash_mode=self._flash_mode,
                 save_conversation_path=str(self._conv_path),
                 extend_system_message=self._sys_ext,
-                sensitive_data=_load_sensitive_data(),
+                sensitive_data=self._sensitive,
             )
             self._run_task = asyncio.create_task(self._run_loop())
         else:
