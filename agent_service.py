@@ -7,7 +7,6 @@ Consumers (ChatBrowserAgent, CLI) iterate over run() and handle
 events however they like — SSE queue, print, file, etc.
 """
 import asyncio
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -69,8 +68,8 @@ class AgentService:
         self._agent:                Agent | None       = None
         self._skill_match:          SkillMatch | None  = None
         self._current_task:         str                = ""
+        self._current_url:          str                = ""
         self._security_stop_reason: str | None         = None
-        self._pending_security:     tuple | None       = None
         self._event_queue:          asyncio.Queue      = asyncio.Queue()
         self._run_task:             asyncio.Task | None = None
 
@@ -93,7 +92,7 @@ class AgentService:
         conv_path = self._session_output_dir / f"{timestamp}_conversation.json"
 
         self._security_stop_reason = None
-        self._pending_security     = None
+        self._current_url          = ""
         self._event_queue          = asyncio.Queue()
         self._current_task         = task
 
@@ -147,7 +146,7 @@ class AgentService:
             max_actions_per_step=MAX_ACTIONS_PER_STEP,
             flash_mode=self._flash_mode,
             save_conversation_path=str(conv_path),
-            extend_system_message=self._build_system_ext(),
+            extend_system_message=self._system_ext,
             sensitive_data=self._sensitive,
         )
 
@@ -166,13 +165,8 @@ class AgentService:
         """Pause the agent. Returns current page URL or None."""
         if not self._agent:
             return None
-        url = None
-        try:
-            url = self._agent.browser_session.state.url
-        except Exception:
-            pass
         self._agent.pause()
-        return url
+        return self._current_url or None
 
     def resume(self, briefing: str) -> None:
         """Resume with a briefing message built by the caller."""
@@ -206,9 +200,10 @@ class AgentService:
         self.stop()
 
     async def close_browser(self) -> None:
-        if self._agent and self._agent.browser_session:
+        agent = self._agent
+        if agent:
             try:
-                await self._agent.browser_session.kill()
+                await agent.browser_session.kill()
             except Exception:
                 pass
 
@@ -230,6 +225,11 @@ class AgentService:
         except Exception:
             action_name, goal = "", ""
 
+        try:
+            self._current_url = state.url or ""
+        except Exception:
+            pass
+
         await self._event_queue.put({
             "type": "step", "step": step_num,
             "goal": goal, "action": action_name,
@@ -238,12 +238,7 @@ class AgentService:
         if not self._judge or self._judge.is_approved(goal, action_name):
             return
 
-        url = ""
-        try:
-            url = state.url or ""
-        except Exception:
-            pass
-        verdict, reason = await self._judge.evaluate(goal, action_name, url)
+        verdict, reason = await self._judge.evaluate(goal, action_name, self._current_url)
         if verdict == Verdict.CRITICAL:
             self._security_stop_reason = reason
             await self._event_queue.put({
@@ -251,8 +246,9 @@ class AgentService:
                 "goal": goal, "action": action_name,
             })
         elif verdict == Verdict.WARNING:
-            self._pending_security = (goal, action_name)
-            self._agent.pause()
+            agent = self._agent
+            if agent:
+                agent.pause()
             await self._event_queue.put({
                 "type": "security_warning", "reason": reason,
                 "goal": goal, "action": action_name,
@@ -275,8 +271,10 @@ class AgentService:
 
         # Decide whether to keep the browser open
         keep_open = await self._decide_keep_browser(result or "")
+        agent = self._agent
         try:
-            self._agent.browser_session.browser_profile.keep_alive = keep_open
+            if agent:
+                agent.browser_session.browser_profile.keep_alive = keep_open
         except Exception:
             keep_open = False
 
@@ -291,30 +289,22 @@ class AgentService:
         return self._security_stop_reason is not None
 
     async def _run_loop(self) -> None:
+        agent = self._agent
+        if agent is None:
+            return
         try:
-            await self._agent.run(max_steps=self._max_steps)
+            await agent.run(max_steps=self._max_steps)
         except asyncio.CancelledError:
             await self._event_queue.put({"type": "stopped"})
         except Exception as e:
-            await self._event_queue.put({"type": "error", "message": _friendly_error(e)})
+            await self._event_queue.put({"type": "error", "message": friendly_error(e)})
         finally:
             try:
-                await self._agent.close()
+                await agent.close()
             except Exception:
                 pass
 
     # ── Internal helpers ──────────────────────────────────────────────────────
-
-    def _build_system_ext(self) -> str | None:
-        """Merge system_extension.md with security policy for agent's extend_system_message."""
-        from app.user_config import load_settings
-        parts = [self._system_ext] if self._system_ext else []
-        s = load_settings()
-        if s.allowed_actions.strip():
-            parts.append(f"ALLOWED actions policy:\n{s.allowed_actions.strip()}")
-        if s.denied_actions.strip():
-            parts.append(f"DENIED actions policy — never do these:\n{s.denied_actions.strip()}")
-        return "\n\n".join(parts) if parts else None
 
     async def _decide_keep_browser(self, result: str) -> bool:
         if self._keep_browser_open:
@@ -356,7 +346,7 @@ Reply with exactly one word: YES or NO.
 """
 
 
-def _friendly_error(exc: Exception) -> str:
+def friendly_error(exc: Exception) -> str:
     msg = str(exc)
     if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
         return "חרגת ממכסת ה-API של Gemini. המתן עד מחר או עדכן את פרטי החיבור ב-Viro."

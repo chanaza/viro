@@ -20,7 +20,7 @@ from pathlib import Path
 from browser_use.browser.profile import BrowserProfile, ViewportSize
 from browser_use.llm.messages import SystemMessage, UserMessage
 
-from agent_service import AgentService, _friendly_error
+from agent_service import AgentService, friendly_error
 from app.llm import create_llm, create_orchestrator_llm, create_judge_llm
 from app.profiles import get_active_profile
 from security_judge import SecurityJudge
@@ -69,7 +69,7 @@ class ChatBrowserAgent:
 
     def __init__(self):
         if sys.platform == "win32":
-            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
 
         s   = load_settings()
         bw  = int(os.getenv("BROWSER_W", 1100))
@@ -84,11 +84,10 @@ class ChatBrowserAgent:
             args=["--ignore-certificate-errors"],
             window_size=ViewportSize(width=bw, height=bh),
             window_position=ViewportSize(width=0, height=0),
-            stealth=True,
             headless=s.headless or None,
             user_data_dir=profile["user_data_dir"],
             profile_directory=profile.get("profile_directory", "Default"),
-            browser_binary_path=profile.get("executable"),
+            executable_path=profile.get("executable"),
             allowed_domains=_parse_domains(s.allowed_domains),
             prohibited_domains=_parse_domains(s.prohibited_domains),
         )
@@ -101,8 +100,17 @@ class ChatBrowserAgent:
                 denied_actions=s.denied_actions,
             )
 
-        sys_ext   = _load_system_extension()
         sensitive = _load_sensitive_data()
+
+        parts = []
+        raw_ext = _load_system_extension()
+        if raw_ext:
+            parts.append(raw_ext)
+        if s.allowed_actions.strip():
+            parts.append(f"ALLOWED actions policy:\n{s.allowed_actions.strip()}")
+        if s.denied_actions.strip():
+            parts.append(f"DENIED actions policy — never do these:\n{s.denied_actions.strip()}")
+        sys_ext = "\n\n".join(parts) if parts else None
 
         self._orchestrator_llm = create_orchestrator_llm()
         self._sys_ext          = sys_ext
@@ -143,7 +151,7 @@ class ChatBrowserAgent:
         try:
             needs_browser = await self._needs_browser(task)
         except Exception as e:
-            await self.queue.put({"type": "error", "message": _friendly_error(e)})
+            await self.queue.put({"type": "error", "message": friendly_error(e)})
             return
 
         if needs_browser:
@@ -187,7 +195,7 @@ class ChatBrowserAgent:
                 await self.queue.put(event)
 
         except Exception as e:
-            await self.queue.put({"type": "error", "message": _friendly_error(e)})
+            await self.queue.put({"type": "error", "message": friendly_error(e)})
 
     # ── Routing ───────────────────────────────────────────────────────────────
 
@@ -196,8 +204,9 @@ class ChatBrowserAgent:
 
     async def _needs_browser(self, task: str) -> bool:
         messages = []
-        if self._system_msg():
-            messages.append(self._system_msg())
+        sys_msg = self._system_msg()
+        if sys_msg:
+            messages.append(sys_msg)
         messages.append(UserMessage(
             content=_ROUTER_PROMPT.format(task=self._build_conversation(task))
         ))
@@ -207,8 +216,9 @@ class ChatBrowserAgent:
     async def _answer_directly(self, task: str) -> None:
         try:
             messages = []
-            if self._system_msg():
-                messages.append(self._system_msg())
+            sys_msg = self._system_msg()
+            if sys_msg:
+                messages.append(sys_msg)
             messages.append(UserMessage(content=self._build_conversation(task)))
             response = await self._orchestrator_llm.ainvoke(messages)
             result   = response.completion
@@ -222,7 +232,7 @@ class ChatBrowserAgent:
                 "log_path":    str(self._log_path)    if self._log_path    else "",
             })
         except Exception as e:
-            await self.queue.put({"type": "error", "message": _friendly_error(e)})
+            await self.queue.put({"type": "error", "message": friendly_error(e)})
 
     def _build_conversation(self, current_msg: str) -> str:
         parts = []

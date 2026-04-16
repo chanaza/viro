@@ -51,7 +51,7 @@ async def main() -> None:
         args=["--ignore-certificate-errors"],
         user_data_dir=profile["user_data_dir"],
         profile_directory=profile.get("profile_directory", "Default"),
-        browser_binary_path=profile.get("executable"),
+        executable_path=profile.get("executable"),
     )
 
     service = AgentService(
