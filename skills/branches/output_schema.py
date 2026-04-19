@@ -1,19 +1,15 @@
 """Output schema for the branches skill."""
 from pydantic import Field
 
-from skills.research_models import ResearchModel, SourceLog
+from core.models import SkillOutputModel
 
 
-class Branch(ResearchModel):
-    name:    str = Field(description="שם הסניף")
-    address: str = Field(default="", description="כתובת (רחוב ומספר) — ריק אם לא נמצא")
-    city:    str = Field(default="", description="עיר — ריק אם לא נמצא")
-    source:  str = Field(description="שם האתר שממנו נלקח הפריט")
+class Branch(SkillOutputModel):
+    name:    str = Field(description="Branch name")
+    address: str = Field(default="", description="Street address — empty if not found")
+    city:    str = Field(default="", description="City — empty if not found")
+    source:  str = Field(description="Name of the website this item was collected from")
 
 
-class BranchList(ResearchModel):
+class BranchList(SkillOutputModel):
     items: list[Branch]
-    log:   list[SourceLog] = Field(
-        default=[],
-        description="לוג של כל האתרים שנוסו — כולל אלה שנכשלו",
-    )

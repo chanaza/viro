@@ -2,7 +2,17 @@
 import json
 from pathlib import Path
 
+from config import COLLECT_ALL
 from core.prompts import ALLOWED_POLICY_BLOCK, DENIED_POLICY_BLOCK
+
+_COLLECT_ALL_INSTRUCTION = (
+    "Collection policy: after finding results at a source, "
+    "continue to the next source and collect from ALL sources."
+)
+_STOP_FIRST_INSTRUCTION = (
+    "Collection policy: after finding results at the first successful source, "
+    "stop immediately — collection is complete."
+)
 
 _CONFIG_DIR = Path(__file__).parent / "config"
 _SYS_EXT_PATH = _CONFIG_DIR / "system_extension.md"
@@ -47,11 +57,12 @@ def _build_system_extension(
     parts: list[str] = []
     if base_extension:
         parts.append(base_extension)
+    parts.append(_COLLECT_ALL_INSTRUCTION if COLLECT_ALL else _STOP_FIRST_INSTRUCTION)
     if allowed_actions.strip():
         parts.append(ALLOWED_POLICY_BLOCK.format(allowed_actions=allowed_actions.strip()))
     if denied_actions.strip():
         parts.append(DENIED_POLICY_BLOCK.format(denied_actions=denied_actions.strip()))
-    return "\n\n".join(parts) if parts else None
+    return "\n\n".join(parts)
 
 
 def build_agent_policy(

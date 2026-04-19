@@ -1,4 +1,8 @@
-"""Branches skill configuration — single source of truth for all site-specific data."""
+"""Branches skill configuration — single source of truth for all site-specific data.
+
+Public string variables (no leading underscore) are automatically exposed as template
+variables in the skill's prompt. Lists and dicts are excluded — only str values are used.
+"""
 
 BUSINESS_PROFILE_PLATFORMS = [
     {"name": "פייסבוק",   "domain": "facebook.com"},
@@ -45,3 +49,16 @@ TRUSTED_AGGREGATORS = [
         ),
     },
 ]
+
+# ── Template variables ────────────────────────────────────────────────────────
+# Injected into the skill's prompt at render time.
+
+platforms_block = ", ".join(
+    f"{p['name']} ({p['domain']})" for p in BUSINESS_PROFILE_PLATFORMS
+)
+
+aggregators_block = "\n".join(
+    f"   - {agg['domain']}: {agg['instructions']}" if agg["instructions"]
+    else f"   - {agg['domain']}"
+    for agg in TRUSTED_AGGREGATORS
+) + "\n"

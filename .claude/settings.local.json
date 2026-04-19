@@ -18,7 +18,27 @@
       "Bash(npx tsx:*)",
       "Bash(npx tsc:*)",
       "Bash(python main.py)",
-      "Bash(python3 main.py)"
+      "Bash(python3 main.py)",
+      "Bash(.venv/Scripts/python.exe -c \"from agent_service.agent_output.final_response_saver import FinalResponseSaver; print\\('ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"from agent_service.orchestrator import AgentOrchestrator; print\\('ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"from skills import SkillRegistry; r = SkillRegistry\\(\\); s = r._skills['branches']; print\\(s.base_skills, s.stop_variants\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"import inspect; from pydantic import BaseModel; print\\(inspect.signature\\(BaseModel.model_json_schema\\)\\)\")",
+      "Bash(.venv/Scripts/python.exe -c 'from skills.branches.output_schema import BranchList; s = BranchList.model_json_schema\\(\\); print\\([k for k in s]\\); print\\('\\\\''no defs'\\\\'' if '\\\\''$defs'\\\\'' not in s else '\\\\''HAS DEFS'\\\\''\\)')",
+      "Bash(mv skills/models.py skills/skill.py)",
+      "Bash(mv skills/output_models.py skills/output_schema.py)",
+      "Bash(.venv/Scripts/python.exe -c \"from skills import SkillRegistry; r = SkillRegistry\\(\\); print\\(list\\(r._skills\\)\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"from core.llm import create_llm_for; print\\('ok'\\)\")",
+      "Bash(rm skills/branches/../../../core/source_log.py)",
+      "Bash(rm core/source_log.py)",
+      "Bash(.venv/Scripts/python.exe -c \"from skills.branches.output_schema import BranchList; from core.models import LLMSettings, ProfileDict, SourceLog; print\\('all ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(.venv/Scripts/python.exe -c \"from core.profiles import build_browser_profile; print\\('ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"from agent_service.skill_runner import SkillRunner; print\\('ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"from core.skill_registry import SkillRegistry; from core.skill_schema import SkillMatch; print\\('ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"from agent_service.orchestrator import AgentOrchestrator; from app.chat_agent import ChatBrowserAgent; from cli.main import main; print\\('ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"from agent_service.orchestrator import AgentOrchestrator; from app.chat_agent import ChatBrowserAgent; from agent_service.skill_registry import SkillRegistry; print\\('ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"from agent_service.orchestrator import AgentOrchestrator; from app.chat_agent import ChatBrowserAgent; print\\('ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"from agent_service.orchestrator import AgentOrchestrator; from cli.main import main; print\\('ok'\\)\")"
     ]
   }
 }

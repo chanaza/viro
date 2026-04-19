@@ -11,7 +11,6 @@ from agent_service.orchestrator import AgentOrchestrator
 from app.llm_config import create_judge_llm, create_llm, create_orchestrator_llm
 from app.user_config import SESSIONS_DIR, load_settings
 from core.profiles import build_browser_profile
-from skills import SkillRegistry
 
 
 class ChatBrowserAgent:
@@ -40,7 +39,6 @@ class ChatBrowserAgent:
             orchestrator_llm=create_orchestrator_llm(),
             browser_profile=browser_profile,
             browser_profile_id=profile["id"],
-            skill_registry=SkillRegistry(),
             allowed_actions=settings.allowed_actions,
             denied_actions=settings.denied_actions,
             judge_llm=create_judge_llm() if has_policy else None,

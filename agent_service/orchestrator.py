@@ -14,14 +14,14 @@ from core.prompts import (
     RESUME_BRIEFING_PAUSED_AT,
     ROUTER_PROMPT,
 )
-from skills import SkillMatch, SkillRegistry
+from core.models import SkillMatch, SkillPreset
+from agent_service.skill_registry import SkillRegistry
 
 from .security_judge import SecurityJudge, Verdict
 
 from .session_output import FinalResponseSaver
 from .errors import friendly_error
 from .service import AgentService
-from .skill_runner import SkillRunner
 
 
 class AgentOrchestrator:
@@ -34,13 +34,13 @@ class AgentOrchestrator:
         orchestrator_llm: BaseChatModel,
         browser_profile: BrowserProfile,
         browser_profile_id: str | None = None,
-        skill_registry: SkillRegistry,
         allowed_actions: str = "",
         denied_actions: str = "",
         judge_llm: BaseChatModel | None = None,
         flash_mode: bool = False,
         max_steps: int = 100,
         keep_browser_open: bool = False,
+        preset_skills: list[SkillPreset] | None = None,
         agent_log_dir: Path,
         full_results_dir: Path | None = None,
         final_response_dir: Path,
@@ -69,7 +69,10 @@ class AgentOrchestrator:
             else None
         )
         self._keep_browser_open = keep_browser_open
-        self._skill_runner = SkillRunner(skill_registry)
+        self._registry = SkillRegistry()
+        self._preset_skills = (
+            self._registry.resolve_presets(preset_skills) if preset_skills else None
+        )
         self._service.set_should_keep_browser_open(self._decide_keep_browser_open)
 
         self.queue: asyncio.Queue = asyncio.Queue()
@@ -86,7 +89,6 @@ class AgentOrchestrator:
         task: str,
         *,
         conversation: str | None = None,
-        skill_match: SkillMatch | None = None,
         session_prefix: str,
     ) -> None:
         self._current_task = task
@@ -101,19 +103,30 @@ class AgentOrchestrator:
             return
 
         if needs_browser:
-            self._run_task = asyncio.create_task(self._run_browser_task(task, skill_match))
+            self._run_task = asyncio.create_task(self._run_browser_task(task, self._preset_skills))
         else:
             self._run_task = asyncio.create_task(self._answer_directly(task, rendered_task))
 
-    async def _run_browser_task(self, task: str, skill_match: SkillMatch | None) -> None:
+    async def _run_browser_task(self, task: str, preset_skills: list[SkillMatch] | None) -> None:
         try:
-            agent_task, output_schema, matched_skill = await self._skill_runner.resolve(
-                task, skill_match, self._orchestrator_llm, self._system_ext
-            )
-            if matched_skill:
-                await self.queue.put(
-                    {"type": "skill_matched", "skill": matched_skill.skill.name, "params": matched_skill.params}
+            matches = (
+                preset_skills
+                if preset_skills is not None
+                else await self._registry.find(
+                    task,
+                    self._orchestrator_llm,
+                    SystemMessage(content=self._system_ext) if self._system_ext else None,
                 )
+            )
+            if matches:
+                agent_task   = self._registry.build_prompt(matches)
+                output_schema = self._registry.output_schema(matches)
+                await self.queue.put(
+                    {"type": "skill_matched", "skills": [m.skill.name for m in matches]}
+                )
+            else:
+                agent_task    = task
+                output_schema = None
 
             async for event in self._service.run(agent_task, output_schema=output_schema):
                 await self._handle_service_event(event)

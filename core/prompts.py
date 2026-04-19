@@ -1,3 +1,18 @@
+SKILL_MATCH_PROMPT = """\
+Available specialized skills:
+{skill_list}
+
+Identify ALL skills from the list above that are relevant to the user request. \
+A request may require more than one skill (e.g. "write a report and email it").
+For each matching skill, extract the required parameters from the request.
+
+Reply with JSON only — no other text:
+One or more matches: [{{"skill": "skill-name", "params": {{"param_name": "value"}}}}, ...]
+No match:            []
+
+User request: {request}
+"""
+
 ALLOWED_POLICY_BLOCK = "ALLOWED actions policy:\n{allowed_actions}"
 DENIED_POLICY_BLOCK = "DENIED actions policy — never do these:\n{denied_actions}"
 

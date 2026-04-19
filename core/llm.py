@@ -7,20 +7,12 @@ import json
 import logging
 from functools import lru_cache
 from pathlib import Path
-from typing import Protocol
 
 from browser_use.llm.base import BaseChatModel
 
+from .models import LLMSettings
+
 _MODELS_PATH = Path(__file__).parent / "config" / "models.json"
-
-
-class LLMSettings(Protocol):
-    gemini_api_key: str
-    google_cloud_project: str
-    llm_location: str
-    groq_api_key: str
-    openai_api_key: str
-    anthropic_api_key: str
 
 
 # ── Per-provider builders ─────────────────────────────────────────────────────

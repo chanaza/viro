@@ -3,7 +3,6 @@ name: research-navigation
 description: >
   Navigation rules for research agents browsing multiple web sources sequentially.
   This is a base skill — it is not matched directly but required by research skills.
-type: base
 ---
 
 **Navigation Rules — Identify the component type and determine how to act:**
@@ -23,7 +22,7 @@ For paginated content ("הבא" button / page numbers): navigate in ascending or
 
 **Stop rule (after each site):**
 - Failed, blocked, or no results → next site in the prescribed sequence.
-- Results found → {stop_rule}
+- Results found → follow the collection policy in your system instructions.
 - "Next site" = strictly the next item in the task's list. No alternatives, no skips, no invented sites.
 
 **General rules:**

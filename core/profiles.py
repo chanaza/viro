@@ -1,17 +1,10 @@
 import json
 import os
 from pathlib import Path
-from typing import TypedDict
 
 from browser_use.browser.profile import BrowserProfile, ViewportSize
 
-class ProfileDict(TypedDict):
-    id: str
-    label: str
-    user_data_dir: str
-    profile_directory: str
-    browser: str
-    executable: str | None
+from core.models import ProfileDict
 
 _EDGE_CANDIDATES = [
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",

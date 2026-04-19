@@ -10,29 +10,22 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent.parent / ".env")
+load_dotenv(Path(__file__).parent.parent / ".env")  # shared config
+load_dotenv(Path(__file__).parent / ".env")          # CLI-specific (overrides shared)
 
 from agent_service.orchestrator import AgentOrchestrator
 from app.llm_config import create_judge_llm, create_llm, create_orchestrator_llm
 from app.user_config import load_settings
 from core.profiles import build_browser_profile
-from skills import SkillMatch, SkillRegistry
+from core.models import SkillPreset
 
-_SUBJECT = os.getenv("SUBJECT", "שופרסל")
-_SKILL_NAME = os.getenv("SKILL", "branches")
-_OUTPUT_DIR = Path(__file__).parent / "output"
+_SUBJECT     = os.getenv("SUBJECT", "שופרסל")
+_SKILL_NAMES = [s.strip() for s in os.getenv("SKILLS", "branches").split(",")]
+_OUTPUT_DIR  = Path(__file__).parent / "output"
 
 
 async def main() -> None:
-    registry = SkillRegistry()
-    skill = registry._skills.get(_SKILL_NAME)
-    if not skill:
-        print(f"ERROR: skill '{_SKILL_NAME}' not found. Available: {list(registry._skills)}")
-        sys.exit(1)
-
-    match = SkillMatch(skill=skill, params={"subject": _SUBJECT})
-
-    print(f"Skill: {skill.name} | Subject: {_SUBJECT}")
+    print(f"Skills: {', '.join(_SKILL_NAMES)} | Subject: {_SUBJECT}")
     print("-" * 60)
 
     settings = load_settings()
@@ -44,11 +37,11 @@ async def main() -> None:
         orchestrator_llm=create_orchestrator_llm(),
         browser_profile=browser_profile,
         browser_profile_id=profile["id"],
-        skill_registry=registry,
         allowed_actions=settings.allowed_actions,
         denied_actions=settings.denied_actions,
         judge_llm=create_judge_llm() if has_policy else None,
         keep_browser_open=settings.keep_browser_open,
+        preset_skills=[SkillPreset(name=name, params={"subject": _SUBJECT}) for name in _SKILL_NAMES],
         agent_log_dir=_OUTPUT_DIR / "sessions",
         full_results_dir=_OUTPUT_DIR,
         final_response_dir=_OUTPUT_DIR / "sessions",
@@ -56,7 +49,6 @@ async def main() -> None:
 
     await orchestrator.start(
         _SUBJECT,
-        skill_match=match,
         session_prefix=datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
     )
 

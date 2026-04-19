@@ -5,7 +5,6 @@ description: >
   השתמש כאשר המשתמש מבקש למצוא סניפים, חנויות, או מיקומים של רשת שיווק בישראל.
   ביטויים מזהים: "סניפים", "חנויות", "סניפי", "איפה יש", "branches", "stores",
   "locations", "תמצא לי סניפים", "find branches", "store locations".
-type: research
 requires:
   - research-navigation
 parameters:
@@ -14,9 +13,6 @@ parameters:
     description: שם הרשת (לדוגמה׃ שופרסל, רמי לוי, זול ובגדול)
     extract_from_request: true
 goal: 'מצא את כל הסניפים של רשת "{subject}" בישראל — שמות, כתובות, ערים — ממקורות אינטרנט.'
-stop_rule:
-  collect_all: "continue to the next site and collect from all sources."
-  stop_first:  "stop immediately — collection is complete."
 output_schema: BranchList
 ---
 
