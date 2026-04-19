@@ -7,7 +7,6 @@ When you encounter a CAPTCHA challenge:
 - Stop all interaction with the page immediately.
 - Wait up to 120 seconds — the system will attempt to solve it automatically.
 - After waiting, check if the CAPTCHA is gone and continue the task.
-- If the CAPTCHA is still present after waiting, report it to the user and stop.
 - Never attempt to click, type, or interact with CAPTCHA elements yourself.
 
 When you finish a task, you must decide whether to keep the browser open or close it.

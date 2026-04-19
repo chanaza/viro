@@ -1,37 +1,26 @@
-"""CLI entry point — runs a skill directly, without the Viro UI.
+"""CLI entry point — runs a skill directly, without the Viro UI."""
 
-Depends on agent_service.py, skills/, app/ (llm, profiles, config).
-Does NOT depend on legacy/src/ (kept for reference only).
-
-Usage:
-    SUBJECT="שופרסל" .venv/Scripts/python.exe cli/main.py
-
-Environment variables (via .env or shell):
-    SUBJECT      — skill subject parameter (default: שופרסל)
-    SKILL        — skill name to run     (default: branches)
-    COLLECT_ALL  — true / false          (default: false)
-    + all LLM / credentials vars consumed by app/user_config.py
-"""
 import asyncio
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
-# Allow importing from the repo root (app/, etc.)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from agent_service import AgentService
-from app.llm import create_llm, create_orchestrator_llm
-from app.profiles import get_active_profile
+from agent_service.orchestrator import AgentOrchestrator
+from app.llm_config import create_judge_llm, create_llm, create_orchestrator_llm
+from app.user_config import load_settings
+from core.profiles import build_browser_profile
 from skills import SkillMatch, SkillRegistry
-from browser_use.browser.profile import BrowserProfile
 
-_SUBJECT     = os.getenv("SUBJECT", "שופרסל")
-_SKILL_NAME  = os.getenv("SKILL",   "branches")
-_OUTPUT_DIR  = Path(__file__).parent / "output"
+_SUBJECT = os.getenv("SUBJECT", "שופרסל")
+_SKILL_NAME = os.getenv("SKILL", "branches")
+_OUTPUT_DIR = Path(__file__).parent / "output"
 
 
 async def main() -> None:
@@ -46,29 +35,38 @@ async def main() -> None:
     print(f"Skill: {skill.name} | Subject: {_SUBJECT}")
     print("-" * 60)
 
-    profile = get_active_profile()
-    browser_profile = BrowserProfile(
-        args=["--ignore-certificate-errors"],
-        user_data_dir=profile["user_data_dir"],
-        profile_directory=profile.get("profile_directory", "Default"),
-        executable_path=profile.get("executable"),
-    )
+    settings = load_settings()
+    profile, browser_profile = build_browser_profile(settings.browser_profile)
+    has_policy = bool(settings.allowed_actions.strip() or settings.denied_actions.strip())
 
-    service = AgentService(
+    orchestrator = AgentOrchestrator(
         agent_llm=create_llm(),
         orchestrator_llm=create_orchestrator_llm(),
         browser_profile=browser_profile,
+        browser_profile_id=profile["id"],
         skill_registry=registry,
-        skill_output_dir=_OUTPUT_DIR,   # cli/output/
+        allowed_actions=settings.allowed_actions,
+        denied_actions=settings.denied_actions,
+        judge_llm=create_judge_llm() if has_policy else None,
+        keep_browser_open=settings.keep_browser_open,
+        agent_log_dir=_OUTPUT_DIR / "sessions",
+        full_results_dir=_OUTPUT_DIR,
+        final_response_dir=_OUTPUT_DIR / "sessions",
     )
 
-    async for event in service.run(task=_SUBJECT, skill_match=match):
+    await orchestrator.start(
+        _SUBJECT,
+        skill_match=match,
+        session_prefix=datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+    )
+
+    while True:
+        event = await orchestrator.queue.get()
         t = event["type"]
         if t == "skill_matched":
-            pass   # already printed above
+            pass
         elif t == "step":
-            print(f"  [{event['step']}] {event['goal']}"
-                  + (f"  → {event['action']}" if event.get("action") else ""))
+            print(f"  [{event['step']}] {event['goal']}" + (f"  → {event['action']}" if event.get("action") else ""))
         elif t == "done":
             print("\n✅ Done.")
             if event.get("result"):
@@ -80,14 +78,17 @@ async def main() -> None:
                 print(f"📄 Sources : {saved['log_csv_path']}")
             if saved.get("history_path"):
                 print(f"📄 History : {saved['history_path']}")
+            break
         elif t == "error":
             print(f"\n❌ Error: {event['message']}")
+            break
         elif t == "stopped":
             print("\n⏹ Stopped.")
+            break
         elif t == "security_warning":
             print(f"\n⚠️  Security warning: {event['reason']}")
             print("   (CLI mode — auto-rejecting and stopping)")
-            service.security_reject()
+            orchestrator.security_reject()
         elif t == "security_stop":
             print(f"\n🛑 Security stop: {event['reason']}")
 

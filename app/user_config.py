@@ -1,11 +1,13 @@
-"""User settings — single source of truth for all user-configurable parameters."""
+﻿"""User settings — single source of truth for all user-configurable parameters."""
 import json
 import os
 from pathlib import Path
 
 from pydantic import BaseModel
 
-_CONFIG_PATH = Path.home() / ".viro" / "config.json"
+_VIRO_DIR    = Path.home() / ".viro"
+_CONFIG_PATH = _VIRO_DIR / "config.json"
+SESSIONS_DIR = _VIRO_DIR / "sessions"
 
 
 class UserSettings(BaseModel):
@@ -25,6 +27,8 @@ class UserSettings(BaseModel):
     judge_model:          str  = ""     # empty → same as orchestrator_model
     allowed_actions:      str  = ""     # free text: what the agent MAY do
     denied_actions:       str  = ""     # free text: what the agent must NOT do
+    # Saving
+    save_full_results:    bool = False  # save CSV/history/URLs for UI runs
     # Google / Vertex AI
     gemini_api_key:       str  = ""
     google_cloud_project: str  = ""
@@ -56,6 +60,7 @@ def load_settings() -> UserSettings:
         judge_model          = data.get("judge_model",          defaults.judge_model),
         allowed_actions      = data.get("allowed_actions",      defaults.allowed_actions),
         denied_actions       = data.get("denied_actions",       defaults.denied_actions),
+        save_full_results    = data.get("save_full_results",    defaults.save_full_results),
         gemini_api_key       = data.get("gemini_api_key")       or os.getenv("GEMINI_API_KEY",       ""),
         google_cloud_project = data.get("google_cloud_project") or os.getenv("GOOGLE_CLOUD_PROJECT", ""),
         llm_location         = data.get("llm_location")         or os.getenv("LLM_LOCATION",         ""),

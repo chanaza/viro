@@ -14,8 +14,8 @@ from pydantic import BaseModel
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from app.chat_agent import ChatBrowserAgent
-from app.llm import get_models, get_provider
-from app.profiles import detect_profiles
+from core.llm import get_models, get_provider
+from core.profiles import detect_profiles
 from app.user_config import UserSettings, load_settings, save_settings
 
 app = FastAPI()
@@ -64,7 +64,7 @@ async def start(body: StartRequest):
     global _agent
     if _agent and _agent.is_running:
         raise HTTPException(400, "Agent is already running. Stop it first.")
-    if not _agent:
+    if not _agent or not _agent.is_active:
         _agent = ChatBrowserAgent()
     await _agent.start(body.task)
     return {"status": "started"}
@@ -72,13 +72,12 @@ async def start(body: StartRequest):
 
 @app.get("/stream")
 async def stream():
-    if not _agent:
-        raise HTTPException(400, "No active session.")
+    agent = _require_agent()
 
     async def event_generator():
         while True:
             try:
-                event = await asyncio.wait_for(_agent.queue.get(), timeout=30)
+                event = await asyncio.wait_for(agent.queue.get(), timeout=30)
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
                 if event["type"] in ("done", "stopped", "error"):
                     break
@@ -91,33 +90,32 @@ async def stream():
 
 @app.post("/pause")
 async def pause():
-    _require_agent()
-    _agent.pause()
+    agent = _require_agent()
+    agent.pause()
     return {"status": "paused"}
 
 
 @app.post("/resume")
 async def resume():
-    _require_agent()
-    _agent.resume()
+    agent = _require_agent()
+    agent.resume()
     return {"status": "resumed"}
 
 
 @app.post("/stop")
 async def stop():
-    _require_agent()
-    _agent.stop()
+    agent = _require_agent()
+    agent.stop()
     return {"status": "stopping"}
 
 
 @app.post("/send")
 async def send(body: SendRequest):
-    if not _agent:
-        raise HTTPException(400, "No active session. Start one first.")
+    agent = _require_agent()
     # Allow send while paused (queues) or running (injects). Not while idle/done.
-    if not _agent.is_running and not (_agent._agent and _agent._agent.state.paused):
+    if not agent.is_running and not agent.is_paused:
         raise HTTPException(400, "Agent is not running. Start a new session.")
-    _agent.send(body.message)
+    agent.send(body.message)
     return {"status": "sent"}
 
 
@@ -131,23 +129,26 @@ async def reset():
 
 @app.post("/close-browser")
 async def close_browser_endpoint():
-    if not _agent:
-        raise HTTPException(400, "No active session.")
-    await _agent.close_browser()
+    agent = _require_agent()
+    await agent.close_browser()
     return {"status": "closed"}
 
 
 @app.post("/security-approve")
 async def security_approve():
-    _require_agent()
-    _agent.security_approve()
+    agent = _require_agent()
+    if not agent.has_pending_security:
+        raise HTTPException(400, "No security warning pending.")
+    agent.security_approve()
     return {"status": "approved"}
 
 
 @app.post("/security-reject")
 async def security_reject():
-    _require_agent()
-    _agent.security_reject()
+    agent = _require_agent()
+    if not agent.has_pending_security:
+        raise HTTPException(400, "No security warning pending.")
+    agent.security_reject()
     return {"status": "rejected"}
 
 
@@ -187,6 +188,7 @@ async def post_settings(body: SettingsRequest):
         judge_model          = body.judge_model,
         allowed_actions      = body.allowed_actions,
         denied_actions       = body.denied_actions,
+        save_full_results    = body.save_full_results,
         gemini_api_key       = body.gemini_api_key       if body.google_auth_type == "apikey" else "",
         google_cloud_project = body.google_cloud_project if body.google_auth_type == "vertex" else "",
         llm_location         = body.llm_location         if body.google_auth_type == "vertex" else "",
@@ -246,6 +248,8 @@ async def auth_google():
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _require_agent():
-    if not _agent or not _agent.is_running:
+def _require_agent() -> ChatBrowserAgent:
+    if not _agent or not _agent.is_active:
         raise HTTPException(400, "No active session. Start one first.")
+    assert _agent is not None
+    return _agent

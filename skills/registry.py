@@ -3,15 +3,13 @@ import importlib.util
 import json
 import re
 from pathlib import Path
-from urllib.parse import unquote
 
 import yaml
 
 from skills.models import Skill, SkillMatch
 from browser_use.llm.messages import SystemMessage, UserMessage
 
-_SKILLS_DIR   = Path(__file__).parent
-_SESSIONS_DIR = Path.home() / ".viro" / "sessions"
+_SKILLS_DIR = Path(__file__).parent
 
 _MATCH_PROMPT = """\
 Available specialized skills:
@@ -167,88 +165,6 @@ class SkillRegistry:
     def output_schema(self, match: SkillMatch):
         return match.skill._output_schema_class
 
-    # ── Result saving ─────────────────────────────────────────────────────────
-
-    def save_result(self, match: SkillMatch, history, output_dir: Path, prefix: str) -> dict:
-        """Save structured research results to CSV files. Returns dict of saved paths."""
-        saved         = {}
-        schema_class  = self.output_schema(match)
-        if not schema_class:
-            return saved
-
-        structured = _extract_structured(history, schema_class)
-
-        # ── Items CSV ────────────────────────────────────────────────────────
-        if structured and hasattr(structured, "items") and structured.items:
-            csv_path = output_dir / f"{prefix}_result.csv"
-            try:
-                with open(csv_path, "w", encoding="utf-8-sig") as f:
-                    headers = list(structured.items[0].model_fields.keys())
-                    f.write(",".join(headers) + "\n")
-                    for item in structured.items:
-                        values = [str(getattr(item, h, "")).replace('"', '""') for h in headers]
-                        f.write(",".join(f'"{v}"' for v in values) + "\n")
-                saved["csv_path"] = str(csv_path)
-                saved["count"]    = len(structured.items)
-            except Exception:
-                pass
-
-        # ── Source log CSV ───────────────────────────────────────────────────
-        if structured and hasattr(structured, "log") and structured.log:
-            log_path = output_dir / f"{prefix}_sources.csv"
-            try:
-                with open(log_path, "w", encoding="utf-8-sig") as f:
-                    f.write("source,visited,found,count,notes\n")
-                    for entry in structured.log:
-                        src   = entry.source.replace('"', '""')
-                        notes = entry.notes.replace('"', '""')
-                        f.write(
-                            f'"{src}",{entry.visited},{entry.found},'
-                            f'{entry.count},"{notes}"\n'
-                        )
-                saved["log_csv_path"] = str(log_path)
-            except Exception:
-                pass
-
-        # ── Action history CSV ───────────────────────────────────────────────
-        history_path = output_dir / f"{prefix}_history.csv"
-        try:
-            with open(history_path, "w", encoding="utf-8-sig") as f:
-                f.write("step,action,details,error,extracted\n")
-                for step_i, step in enumerate(history.history, start=1):
-                    actions = step.model_output.action if step.model_output else []
-                    results = step.result or []
-                    for act_i, (action, res) in enumerate(zip(actions, results)):
-                        action_dict = action.model_dump(exclude_none=True)
-                        action_name = next(iter(action_dict), "unknown")
-                        details     = str(list(action_dict.values())[0]) if action_dict else ""
-                        error       = (res.error or "").replace('"', '""')[:200]
-                        extracted   = (res.extracted_content or "").replace('"', '""')[:300]
-                        details_esc = details.replace('"', '""')[:200]
-                        f.write(
-                            f'{step_i}.{act_i + 1},"{action_name}",'
-                            f'"{details_esc}","{error}","{extracted}"\n'
-                        )
-            saved["history_path"] = str(history_path)
-        except Exception:
-            pass
-
-        # ── Unique URLs txt ──────────────────────────────────────────────────
-        urls_path = output_dir / f"{prefix}_urls.txt"
-        try:
-            all_urls = [u for u in (history.urls() or []) if u]
-            seen, unique_urls = set(), []
-            for u in all_urls:
-                if u not in seen:
-                    seen.add(u)
-                    unique_urls.append(u)
-            with open(urls_path, "w", encoding="utf-8-sig") as f:
-                f.write("\n".join(unquote(u) for u in unique_urls))
-            saved["urls_path"] = str(urls_path)
-        except Exception:
-            pass
-
-        return saved
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -286,19 +202,3 @@ class _SafeDict(dict):
         return f"{{{key}}}"
 
 
-def _extract_structured(history, schema_class):
-    """Try get_structured_output first; fall back to regex JSON parse from final_result."""
-    try:
-        output = history.get_structured_output(schema_class)
-        if output:
-            return output
-    except Exception:
-        pass
-    final_text = history.final_result() or ""
-    m = re.search(r'\{[\s\S]*\}', final_text)
-    if m:
-        try:
-            return schema_class.model_validate_json(m.group())
-        except Exception:
-            pass
-    return None
