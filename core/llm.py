@@ -45,7 +45,8 @@ def _build_openai(model: str, s: LLMSettings) -> BaseChatModel:
 
 def _build_anthropic(model: str, s: LLMSettings) -> BaseChatModel:
     from browser_use.llm.anthropic.chat import ChatAnthropic
-    return ChatAnthropic(model=model, api_key=s.anthropic_api_key)
+    return ChatAnthropic(model=model, api_key=s.anthropic_api_key,
+                         max_tokens=_MAX_OUTPUT_TOKENS)
 
 
 _BUILDERS = {
