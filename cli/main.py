@@ -9,6 +9,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")  # shared config
@@ -62,7 +67,7 @@ async def main() -> None:
     profiles = detect_profiles()
     print("Browser profiles:")
     for p in profiles:
-        marker = "→" if p["id"] == profile["id"] else " "
+        marker = ">" if p["id"] == profile["id"] else " "
         print(f"  {marker} {p['id']:<25} {p['label']}")
     print()
     print(f"Task  : {_TASK}")
@@ -81,9 +86,9 @@ async def main() -> None:
         judge_llm        = create_llm_for(_MODEL, creds) if has_policy else None,
         keep_browser_open= _KEEP_BROWSER,
         max_steps        = _MAX_STEPS,
-        agent_log_dir    = _OUTPUT_DIR / "sessions",
-        full_results_dir = _OUTPUT_DIR,
-        final_response_dir = _OUTPUT_DIR / "sessions",
+        agent_log_dir      = _OUTPUT_DIR / "sessions",
+        full_results_dir   = _OUTPUT_DIR,
+        final_response_dir = _OUTPUT_DIR,
     )
 
     await orchestrator.start(

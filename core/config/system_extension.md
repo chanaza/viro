@@ -8,8 +8,3 @@ When you encounter a CAPTCHA challenge:
 - Wait up to 120 seconds — the system will attempt to solve it automatically.
 - After waiting, check if the CAPTCHA is gone and continue the task.
 - Never attempt to click, type, or interact with CAPTCHA elements yourself.
-
-When you finish a task, you must decide whether to keep the browser open or close it.
-Keep the browser open if the result is something the user will likely want to act on directly in the browser — such as a filled shopping cart, a product page, a booking form, a course page, or any page where the user's next natural step is to interact with it.
-Close the browser if the task was informational — research, data extraction, answering a question, or any task where the result has been delivered as text.
-When in doubt, keep the browser open.

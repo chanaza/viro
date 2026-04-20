@@ -13,6 +13,7 @@ from browser_use.llm.base import BaseChatModel
 from .models import LLMSettings
 
 _MODELS_PATH = Path(__file__).parent / "config" / "models.json"
+_MAX_OUTPUT_TOKENS = 32_000
 
 
 # ── Per-provider builders ─────────────────────────────────────────────────────
@@ -21,12 +22,14 @@ def _build_google(model: str, s: LLMSettings) -> BaseChatModel:
     from browser_use.llm.google.chat import ChatGoogle
 
     if s.gemini_api_key:
-        return ChatGoogle(model=model, api_key=s.gemini_api_key)
+        return ChatGoogle(model=model, api_key=s.gemini_api_key,
+                          max_output_tokens=_MAX_OUTPUT_TOKENS)
     return ChatGoogle(
         model=model,
         project=s.google_cloud_project,
         location=s.llm_location,
         vertexai=True,
+        max_output_tokens=_MAX_OUTPUT_TOKENS,
     )
 
 
