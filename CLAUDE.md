@@ -21,9 +21,10 @@ researcher-agent/
 │
 ├── core/                   ← קוד shared, ללא תלות ב-app או agent_service
 │   ├── llm.py              ← LLM factory: create_llm_for(model, settings), get_models()
+│   ├── models.py           ← Skill, SkillMatch, SkillPreset, SkillOutputModel, SourceLog
 │   ├── profiles.py         ← browser profile detection, build_browser_profile()
-│   ├── prompts.py          ← ROUTER_PROMPT, KEEP_BROWSER_PROMPT, JUDGE_PROMPT, RESUME_BRIEFING_*
-│   ├── agent_setup.py      ← build_agent_policy() — טוען system_extension.md + sensitive_data.json ומרכיב system_ext
+│   ├── prompts.py          ← ROUTER_PROMPT, KEEP_BROWSER_PROMPT, JUDGE_PROMPT, RESUME_BRIEFING_*, COLLECT_ALL_INSTRUCTION, STOP_FIRST_INSTRUCTION
+│   ├── agent_setup.py      ← load_system_extension(), load_sensitive_data()
 │   └── config/
 │       ├── models.json     ← רשימת מודלים זמינים עם provider
 │       ├── system_extension.md   ← system prompt extension לסוכן
@@ -31,24 +32,20 @@ researcher-agent/
 │
 ├── agent_service/          ← שכבת עסקית: browser-use + orchestration
 │   ├── service.py          ← AgentService: thin wrapper סביב browser-use Agent
-│   ├── orchestrator.py     ← AgentOrchestrator: routing, skills, security, שמירה
-│   ├── skill_runner.py     ← SkillRunner: skill resolution (pre-matched או LLM)
+│   ├── orchestrator.py     ← AgentOrchestrator: routing, skills, security, שמירה; בונה system_ext פנימית
+│   ├── skill_registry.py   ← SkillRegistry: load, find, build_prompt, output_schema, resolve_presets
 │   ├── security_judge.py   ← SecurityJudge, Verdict — מדיניות ביטחון בריצה
 │   ├── session_output/     ← שמירת תוצאות
 │   │   ├── artifacts_saver.py   ← ArtifactsSaver: CSV, history, URLs
 │   │   └── final_response_saver.py  ← FinalResponseSaver: answer.md, log.md
 │   └── errors.py           ← friendly_error()
 │
-├── skills/                 ← הגדרות Skill (SKILL.md format), ללא תלות ב-app/
-│   ├── __init__.py         ← exports: Skill, SkillMatch, SkillRegistry
-│   ├── models.py           ← Skill, SkillMatch dataclasses
-│   ├── registry.py         ← SkillRegistry: load, find, build_prompt, output_schema
-│   ├── research_models.py  ← ResearchModel, SourceLog
+├── skills/                 ← תוכן בלבד: הגדרות SKILL.md + output schemas + context
 │   ├── research-navigation/SKILL.md  ← base skill: כללי ניווט גנריים
 │   └── branches/
 │       ├── SKILL.md        ← research skill: מחקר סניפים (5 מקורות)
 │       ├── config.py       ← TRUSTED_AGGREGATORS, BUSINESS_PROFILE_PLATFORMS
-│       ├── output_schema.py ← Branch, BranchList
+│       ├── output_schema.py ← Branch, BranchList (extends SkillOutputModel מ-core)
 │       └── render_context.py ← get_context(params) → platforms_block, aggregators_block
 │
 ├── app/                    ← שכבת UI בלבד (Viro)
@@ -59,7 +56,8 @@ researcher-agent/
 │   └── static/index.html   ← Chat UI (vanilla JS + SSE)
 │
 ├── cli/                    ← הרצת CLI ישירה (ללא UI)
-│   ├── main.py             ← entry point: SUBJECT + SKILL env vars
+│   ├── main.py             ← entry point: קורא מ-.env, ללא תלות ב-app/
+│   ├── .env                ← SUBJECT, SKILLS, TASK, COLLECT_ALL, BROWSER_PROFILE, ...
 │   └── output/             ← תוצאות CLI (לא ב-git)
 │
 ├── installer/              ← Inno Setup installer לאפליקציית Viro
@@ -75,12 +73,13 @@ researcher-agent/
 
 ## הרצה — CLI
 ```bash
-SUBJECT="שופרסל" .venv/Scripts/python.exe cli/main.py
+.venv/Scripts/python.exe cli/main.py
 ```
-משתני `.env` רלוונטיים:
+משתני `cli/.env` רלוונטיים:
 - `SUBJECT` — שם הרשת (ברירת מחדל: שופרסל)
-- `SKILL` — שם ה-skill להרצה (ברירת מחדל: branches)
-- `COLLECT_ALL` — `true` לאיסוף מכל המקורות, `false` (ברירת מחדל) לעצור אחרי הצלחה ראשונה
+- `SKILLS` — שמות skills מופרדים בפסיקים (ברירת מחדל: branches)
+- `TASK` — ניסוח המשימה; `{subject}` מוחלף אוטומטית
+- `COLLECT_ALL` — `true` לאיסוף מכל המקורות, `false` לעצור אחרי הצלחה ראשונה
 
 ## הרצה — Viro (UI)
 ```bash
@@ -98,8 +97,12 @@ cli/               ← CLI consumer
 
 **זרימת אחריות:**
 - `AgentService` — wraps browser-use Agent בלבד; מוציא events: `step`, `done`, `stopped`, `error`
-- `AgentOrchestrator` — routing (BROWSE/ANSWER), skill resolution, security judge, שמירת final response; מוציא events: `skill_matched`, `step`, `security_warning`, `security_stop`, `security_approved`, `security_rejected`, `done`, `stopped`, `error`
+- `AgentOrchestrator` — routing (BROWSE/ANSWER), skill resolution, security judge, שמירת final response; בונה system_ext פנימית (`_build_system_ext`); מוציא events: `skill_matched`, `step`, `security_warning`, `security_stop`, `security_approved`, `security_rejected`, `done`, `stopped`, `error`
 - `ChatBrowserAgent` — UI adapter: conversation history, relay events ל-SSE queue
+
+**preset_skills בסטארט, לא ב-init:**
+- `AgentOrchestrator.__init__` = session-level (LLM, browser, policy)
+- `AgentOrchestrator.start(preset_skills=...)` = per-run; כשמסופק — מדלג על routing LLM call
 
 **שלושה סוגי output (לפי פרמטרי dir):**
 - `agent_log_dir` — `conversation.json` (browser-use LLM log) — תמיד

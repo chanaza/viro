@@ -5,9 +5,14 @@ from browser_use.browser.profile import BrowserProfile
 from browser_use.llm.base import BaseChatModel
 from browser_use.llm.messages import SystemMessage, UserMessage
 
-from core.agent_setup import build_agent_policy
+from config import COLLECT_ALL
+from core.agent_setup import load_sensitive_data, load_system_extension
 from core.prompts import (
+    ALLOWED_POLICY_BLOCK,
+    COLLECT_ALL_INSTRUCTION,
+    DENIED_POLICY_BLOCK,
     KEEP_BROWSER_PROMPT,
+    STOP_FIRST_INSTRUCTION,
     RESUME_BRIEFING_CONTEXT,
     RESUME_BRIEFING_HEADER,
     RESUME_BRIEFING_MESSAGES_HEADER,
@@ -40,12 +45,13 @@ class AgentOrchestrator:
         flash_mode: bool = False,
         max_steps: int = 100,
         keep_browser_open: bool = False,
-        preset_skills: list[SkillPreset] | None = None,
         agent_log_dir: Path,
         full_results_dir: Path | None = None,
         final_response_dir: Path,
     ) -> None:
-        system_ext, sensitive_data = build_agent_policy(
+        sensitive_data = load_sensitive_data()
+        system_ext = self._build_system_ext(
+            base=load_system_extension(),
             allowed_actions=allowed_actions,
             denied_actions=denied_actions,
         )
@@ -70,9 +76,6 @@ class AgentOrchestrator:
         )
         self._keep_browser_open = keep_browser_open
         self._registry = SkillRegistry()
-        self._preset_skills = (
-            self._registry.resolve_presets(preset_skills) if preset_skills else None
-        )
         self._service.set_should_keep_browser_open(self._decide_keep_browser_open)
 
         self.queue: asyncio.Queue = asyncio.Queue()
@@ -89,12 +92,19 @@ class AgentOrchestrator:
         task: str,
         *,
         conversation: str | None = None,
+        preset_skills: list[SkillPreset] | None = None,
         session_prefix: str,
     ) -> None:
         self._current_task = task
         self._steps_log = []
         self._session_prefix = session_prefix
         rendered_task = conversation or task
+
+        resolved = self._registry.resolve_presets(preset_skills) if preset_skills else None
+
+        if resolved:
+            self._run_task = asyncio.create_task(self._run_browser_task(task, resolved))
+            return
 
         try:
             needs_browser = await self._should_browse(rendered_task)
@@ -103,7 +113,7 @@ class AgentOrchestrator:
             return
 
         if needs_browser:
-            self._run_task = asyncio.create_task(self._run_browser_task(task, self._preset_skills))
+            self._run_task = asyncio.create_task(self._run_browser_task(task, None))
         else:
             self._run_task = asyncio.create_task(self._answer_directly(task, rendered_task))
 
@@ -119,8 +129,9 @@ class AgentOrchestrator:
                 )
             )
             if matches:
-                agent_task   = self._registry.build_prompt(matches)
-                output_schema = self._registry.output_schema(matches)
+                skill_guidance = self._registry.build_prompt(matches)
+                agent_task     = f"{task}\n\n{skill_guidance}"
+                output_schema  = self._registry.output_schema(matches)
                 await self.queue.put(
                     {"type": "skill_matched", "skills": [m.skill.name for m in matches]}
                 )
@@ -187,6 +198,23 @@ class AgentOrchestrator:
             }
             self._steps_log.append(warning_event)
             await self.queue.put(warning_event)
+
+    @staticmethod
+    def _build_system_ext(
+        *,
+        base: str | None,
+        allowed_actions: str,
+        denied_actions: str,
+    ) -> str | None:
+        parts: list[str] = []
+        if base:
+            parts.append(base)
+        parts.append(COLLECT_ALL_INSTRUCTION if COLLECT_ALL else STOP_FIRST_INSTRUCTION)
+        if allowed_actions.strip():
+            parts.append(ALLOWED_POLICY_BLOCK.format(allowed_actions=allowed_actions.strip()))
+        if denied_actions.strip():
+            parts.append(DENIED_POLICY_BLOCK.format(denied_actions=denied_actions.strip()))
+        return "\n\n".join(parts) if parts else None
 
     def _system_msg(self) -> SystemMessage | None:
         return SystemMessage(content=self._system_ext) if self._system_ext else None
