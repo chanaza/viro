@@ -3,7 +3,6 @@
 import asyncio
 import os
 import sys
-from datetime import datetime
 
 from browser_use.browser.profile import ViewportSize
 
@@ -59,7 +58,6 @@ class ChatBrowserAgent:
         await self._orchestrator.start(
             task,
             conversation=self._build_conversation(task),
-            session_prefix=datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
         )
 
     def _start_relay(self) -> None:

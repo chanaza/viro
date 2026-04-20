@@ -37,9 +37,9 @@ class ArtifactsSaver:
             return False
 
     @staticmethod
-    def save(history, output_dir: Path, result: str, schema_class=None) -> dict[str, Any]:
+    def save(history, output_dir: Path, result: str, schema_class=None, prefix: str | None = None) -> dict[str, Any]:
         ArtifactsSaver._ensure_dir(output_dir)
-        prefix = ArtifactsSaver._get_prefix()
+        prefix = prefix or ArtifactsSaver._get_prefix()
         saved: dict[str, Any] = {}
 
         saved.update(ArtifactsSaver._save_history(history, output_dir, prefix))

@@ -63,6 +63,7 @@ class AgentService:
         self._agent: Agent | None = None
         self._current_task: str = ""
         self._current_url: str = ""
+        self._run_prefix: str = ""
         self._event_queue: asyncio.Queue = asyncio.Queue()
         self._run_task: asyncio.Task | None = None
 
@@ -76,15 +77,18 @@ class AgentService:
         self,
         task: str,
         output_schema: type | None = None,
+        prefix: str | None = None,
     ) -> AsyncGenerator[dict, None]:
         """Run a prepared browser task and yield events until done/error/stopped."""
         self._agent_log_dir.mkdir(parents=True, exist_ok=True)
-        conv_path = self._agent_log_dir / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_conversation.json"
+        run_prefix = prefix or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        conv_path = self._agent_log_dir / f"{run_prefix}_conversation.json"
 
         self._current_url = ""
         self._event_queue = asyncio.Queue()
         self._current_task = task
         self._output_schema = output_schema
+        self._run_prefix = run_prefix
 
         _allow_browser_foreground()
 
@@ -188,7 +192,7 @@ class AgentService:
         result = history.final_result() if history else ""
         saved = {}
         if self._full_results_dir and history:
-            saved = ArtifactsSaver.save(history, self._full_results_dir, result or "", self._output_schema)
+            saved = ArtifactsSaver.save(history, self._full_results_dir, result or "", self._output_schema, self._run_prefix or None)
 
         keep_open = False
         if self._should_keep_browser_open:

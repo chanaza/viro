@@ -4,7 +4,6 @@ import asyncio
 import os
 import sys
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -94,7 +93,6 @@ async def main() -> None:
     await orchestrator.start(
         _TASK,
         preset_skills=[SkillPreset(name=name, params={"subject": _SUBJECT}) for name in _SKILL_NAMES],
-        session_prefix=datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
     )
 
 

@@ -1,4 +1,6 @@
 import asyncio
+import re
+from datetime import datetime
 from pathlib import Path
 
 from browser_use.browser.profile import BrowserProfile
@@ -21,6 +23,12 @@ from core.prompts import (
 )
 from core.models import SkillMatch, SkillPreset
 from agent_service.skill_registry import SkillRegistry
+
+def _filename_safe(s: str) -> str:
+    """Strip characters that are unsafe in file names; replace spaces with underscores."""
+    s = s.strip().replace(" ", "_")
+    return re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", s) or "unnamed"
+
 
 from .security_judge import SecurityJudge, Verdict
 
@@ -93,16 +101,16 @@ class AgentOrchestrator:
         *,
         conversation: str | None = None,
         preset_skills: list[SkillPreset] | None = None,
-        session_prefix: str,
     ) -> None:
         self._current_task = task
         self._steps_log = []
-        self._session_prefix = session_prefix
+        self._session_prefix = ""
         rendered_task = conversation or task
 
         resolved = self._registry.resolve_presets(preset_skills) if preset_skills else None
 
         if resolved:
+            self._session_prefix = self._build_prefix(resolved)
             self._run_task = asyncio.create_task(self._run_browser_task(task, resolved))
             return
 
@@ -115,6 +123,7 @@ class AgentOrchestrator:
         if needs_browser:
             self._run_task = asyncio.create_task(self._run_browser_task(task, None))
         else:
+            self._session_prefix = self._build_prefix(None)
             self._run_task = asyncio.create_task(self._answer_directly(task, rendered_task))
 
     async def _run_browser_task(self, task: str, preset_skills: list[SkillMatch] | None) -> None:
@@ -129,6 +138,8 @@ class AgentOrchestrator:
                 )
             )
             if matches:
+                if not self._session_prefix:  # not already set by start() for preset path
+                    self._session_prefix = self._build_prefix(matches)
                 skill_guidance = self._registry.build_prompt(matches)
                 agent_task     = f"{task}\n\n{skill_guidance}"
                 output_schema  = self._registry.output_schema(matches)
@@ -136,10 +147,11 @@ class AgentOrchestrator:
                     {"type": "skill_matched", "skills": [m.skill.name for m in matches]}
                 )
             else:
+                self._session_prefix = self._build_prefix(None)
                 agent_task    = task
                 output_schema = None
 
-            async for event in self._service.run(agent_task, output_schema=output_schema):
+            async for event in self._service.run(agent_task, output_schema=output_schema, prefix=self._session_prefix):
                 await self._handle_service_event(event)
         except Exception as e:
             await self.queue.put({"type": "error", "message": friendly_error(e)})
@@ -198,6 +210,36 @@ class AgentOrchestrator:
             }
             self._steps_log.append(warning_event)
             await self.queue.put(warning_event)
+
+    @staticmethod
+    def _build_prefix(matches: list[SkillMatch] | None) -> str:
+        """Build a file-name prefix for this run: {timestamp}[_{skills}[_{subject}]]
+
+        Components (all optional after the timestamp):
+        - skills:   skill names joined by '+' — present when any skill was matched.
+        - subject:  value of params["subject"] — present only when all matched skills
+                    share the same non-empty subject value.
+
+        All variable components are sanitized for use in file names.
+        Examples:
+            no skills           → "2026-04-20_21-00-00"
+            skill=branches      → "2026-04-20_21-00-00_branches"
+            skill=branches,
+            subject=שופרסל     → "2026-04-20_21-00-00_branches_שופרסל"
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        if not matches:
+            return timestamp
+
+        skill_part = "+".join(m.skill.name for m in matches)
+        subjects = {m.params.get("subject", "") for m in matches}
+        subjects.discard("")
+        subject_part = next(iter(subjects)) if len(subjects) == 1 else ""
+
+        parts = [timestamp, _filename_safe(skill_part)]
+        if subject_part:
+            parts.append(_filename_safe(subject_part))
+        return "_".join(parts)
 
     @staticmethod
     def _build_system_ext(
