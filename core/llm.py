@@ -23,13 +23,15 @@ def _build_google(model: str, s: LLMSettings) -> BaseChatModel:
 
     if s.gemini_api_key:
         return ChatGoogle(model=model, api_key=s.gemini_api_key,
-                          max_output_tokens=_MAX_OUTPUT_TOKENS)
+                          max_output_tokens=_MAX_OUTPUT_TOKENS,
+                          thinking_budget=0)
     return ChatGoogle(
         model=model,
         project=s.google_cloud_project,
         location=s.llm_location,
         vertexai=True,
         max_output_tokens=_MAX_OUTPUT_TOKENS,
+        thinking_budget=0,
     )
 
 

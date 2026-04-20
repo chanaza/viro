@@ -6,7 +6,9 @@ description: >
 ---
 
 **Navigation Rules — Identify the component type and determine how to act:**
-1. **Combobox / dropdown** — All items are in DOM memory from the moment it opens: extract immediately and finish.
+1. **Combobox / dropdown** — All items are in DOM memory from the moment it opens.
+   - First try: `extract` — returns all visible option text in one call.
+   - If extract returns empty: use `evaluate` with `Array.from(document.querySelector('select').options).map(o => o.text)` (or the relevant CSS selector) to read all options into `read_state`. Then in the **next step**, call `done()` using the data from `read_state`. Do not try to call `done()` and read the data in the same step.
 2. **List with a "Load more" button ("טען עוד" / "הצג עוד תוצאות")** — Click the button in a loop until it disappears, then extract.
 3. **Infinite scroll** — Items load as you scroll: scroll down in a loop until no new items appear, then extract.
 4. **Regular rendered list** (search results, already-loaded cards) — Extract directly from the existing DOM.
@@ -15,9 +17,9 @@ For paginated content ("הבא" button / page numbers): navigate in ascending or
 **Switching between sites:** Navigate directly to the next site in the current tab (new_tab: False). Do not close tabs and open new ones — this may crash the browser.
 
 **Extracting data from a page:**
-- Always try extract first — even when you already have information from find_elements about the DOM structure.
-- If extract returned completely empty — one single evaluate attempt is allowed.
-- evaluate returning [] or an error = move immediately to the next site. Any additional evaluate attempt is strictly forbidden, no exceptions.
+- Always try `extract` first — even when you already have information from find_elements about the DOM structure.
+- If extract returned completely empty — one single `evaluate` attempt is allowed.
+- `evaluate` returning `[]` or an error = move immediately to the next site. Any additional `evaluate` attempt is strictly forbidden, no exceptions.
 - Partial result (some fields empty) = full success. Accumulate the data and move immediately to the next site. Do not attempt to improve a result that was already received.
 
 **Stop rule (after each site):**
@@ -27,5 +29,4 @@ For paginated content ("הבא" button / page numbers): navigate in ascending or
 
 **General rules:**
 - Do not create todo.md, planning, or tracking files. If you tried to create a file and failed — ignore the failure and continue directly with the task.
-- When you find a complete dataset in a dropdown/combobox — call done() immediately at that step with all data you read, before any further actions.
-- At the end of collection — call done() directly with all collected data. Do not save data to files during the run.
+- At the end of collection — call `done()` directly with all collected data. Do not save data to files during the run.

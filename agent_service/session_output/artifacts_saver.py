@@ -49,7 +49,7 @@ class ArtifactsSaver:
 
     @staticmethod
     def _save_history(history, output_dir: Path, prefix: str) -> dict[str, str]:
-        path = output_dir / f"{prefix}_history.csv"
+        path = output_dir / f"{prefix}_actions.csv"
         rows = []
         for step_i, step in enumerate(history.history, start=1):
             actions = step.model_output.action if step.model_output else []
@@ -63,7 +63,7 @@ class ArtifactsSaver:
                 rows.append([f"{step_i}.{act_i + 1}", action_name, details[:200], error, extracted])
 
         if ArtifactsSaver._write_csv(path, HISTORY_HEADERS, rows):
-            return {"history_path": str(path)}
+            return {"actions_path": str(path)}
         return {}
 
     @staticmethod

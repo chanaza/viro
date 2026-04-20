@@ -168,7 +168,7 @@ class AgentOrchestrator:
             final_saved = self._save_final_response(event.get("result", ""))
             event["saved"] = {**event.get("saved", {}), **final_saved}
             event["answer_path"] = final_saved.get("answer_path", "")
-            event["log_path"] = final_saved.get("log_path", "")
+            event["steps_path"] = final_saved.get("steps_path", "")
             await self.queue.put(event)
             return
 
@@ -296,7 +296,7 @@ class AgentOrchestrator:
                     "result": result,
                     "browser_open": False,
                     "answer_path": saved.get("answer_path", ""),
-                    "log_path": saved.get("log_path", ""),
+                    "steps_path": saved.get("steps_path", ""),
                 }
             )
         except Exception as e:

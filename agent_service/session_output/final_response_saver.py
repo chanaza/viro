@@ -35,7 +35,7 @@ class FinalResponseSaver:
         output_dir: Path,
         prefix: str,
     ) -> dict[str, str]:
-        path = output_dir / f"{prefix}_log.md"
+        path = output_dir / f"{prefix}_steps.md"
         try:
             ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             lines = [f"# Log - {ts}", "", "## Task", task, ""]
@@ -47,7 +47,7 @@ class FinalResponseSaver:
                         lines.append(formatted)
                 lines.append("")
             path.write_text("\n".join(lines), encoding="utf-8-sig")
-            return {"log_path": str(path)}
+            return {"steps_path": str(path)}
         except Exception:
             return {}
 

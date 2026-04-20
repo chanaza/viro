@@ -214,6 +214,6 @@ class AgentService:
                 "browser_open": keep_open,
                 "saved": saved,
                 "answer_path": saved.get("answer_path", ""),
-                "log_path": saved.get("log_path", ""),
+                "steps_path": saved.get("steps_path", ""),
             }
         )

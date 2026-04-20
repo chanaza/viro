@@ -112,8 +112,8 @@ async def main() -> None:
                 print(f"📄 Results : {saved['csv_path']} ({saved.get('count', '?')} items)")
             if saved.get("log_csv_path"):
                 print(f"📄 Sources : {saved['log_csv_path']}")
-            if saved.get("history_path"):
-                print(f"📄 History : {saved['history_path']}")
+            if saved.get("actions_path"):
+                print(f"📄 Actions : {saved['actions_path']}")
             break
         elif t == "error":
             print(f"\n❌ Error: {event['message']}")
