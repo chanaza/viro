@@ -192,7 +192,7 @@ class AgentService:
         result = history.final_result() if history else ""
         saved = {}
         if self._full_results_dir and history:
-            saved = ArtifactsSaver.save(history, self._full_results_dir, result or "", self._output_schema, self._run_prefix or None)
+            saved = ArtifactsSaver.save(history, self._full_results_dir, result or "", self._run_prefix, self._output_schema)
 
         keep_open = False
         if self._should_keep_browser_open:

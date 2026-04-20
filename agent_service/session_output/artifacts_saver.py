@@ -1,13 +1,11 @@
 """ArtifactsSaver — persists structured run artifacts to disk (CSV, history, URLs)."""
 
 import re
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
 
 CSV_ENCODING = "utf-8-sig"
-TIMESTAMP_FORMAT = "%Y-%m-%d_%H-%M-%S"
 HISTORY_HEADERS = ["step", "action", "details", "error", "extracted"]
 SOURCE_LOG_HEADERS = ["source", "visited", "found", "count", "notes"]
 
@@ -16,10 +14,6 @@ class ArtifactsSaver:
     @staticmethod
     def _ensure_dir(output_dir: Path) -> None:
         output_dir.mkdir(parents=True, exist_ok=True)
-
-    @staticmethod
-    def _get_prefix() -> str:
-        return datetime.now().strftime(TIMESTAMP_FORMAT)
 
     @staticmethod
     def _escape_csv(value: str) -> str:
@@ -37,9 +31,8 @@ class ArtifactsSaver:
             return False
 
     @staticmethod
-    def save(history, output_dir: Path, result: str, schema_class=None, prefix: str | None = None) -> dict[str, Any]:
+    def save(history, output_dir: Path, result: str, prefix: str, schema_class=None) -> dict[str, Any]:
         ArtifactsSaver._ensure_dir(output_dir)
-        prefix = prefix or ArtifactsSaver._get_prefix()
         saved: dict[str, Any] = {}
 
         saved.update(ArtifactsSaver._save_history(history, output_dir, prefix))
