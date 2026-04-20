@@ -13,7 +13,7 @@ from browser_use.llm.base import BaseChatModel
 from .models import LLMSettings
 
 _MODELS_PATH = Path(__file__).parent / "config" / "models.json"
-_MAX_OUTPUT_TOKENS = 32_000
+_MAX_OUTPUT_TOKENS = 65_536
 
 
 # ── Per-provider builders ─────────────────────────────────────────────────────
