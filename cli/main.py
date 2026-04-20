@@ -100,7 +100,7 @@ async def main() -> None:
         event = await orchestrator.queue.get()
         t = event["type"]
         if t == "skill_matched":
-            pass
+            print(f"Skills: {', '.join(event['skills'])}")
         elif t == "step":
             print(f"  [{event['step']}] {event['goal']}" + (f"  → {event['action']}" if event.get("action") else ""))
         elif t == "done":

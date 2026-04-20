@@ -143,9 +143,9 @@ class AgentOrchestrator:
                 skill_guidance = self._registry.build_prompt(matches)
                 agent_task     = f"{task}\n\n{skill_guidance}"
                 output_schema  = self._registry.output_schema(matches)
-                await self.queue.put(
-                    {"type": "skill_matched", "skills": [m.skill.name for m in matches]}
-                )
+                skill_matched_event = {"type": "skill_matched", "skills": [m.skill.name for m in matches]}
+                self._steps_log.append(skill_matched_event)
+                await self.queue.put(skill_matched_event)
             else:
                 self._session_prefix = self._build_prefix(None)
                 agent_task    = task
