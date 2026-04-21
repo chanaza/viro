@@ -6,9 +6,8 @@ description: >
 ---
 
 **Navigation Rules — Identify the component type and determine how to act:**
-1. **Combobox / dropdown** — All items are in DOM memory from the moment it opens.
-   - First try: `extract` — returns all visible option text in one call.
-   - If extract returns empty: use `evaluate` with `Array.from(document.querySelector('select').options).map(o => o.text)` (or the relevant CSS selector) to read all options into `read_state`. Then in the **next step**, call `done()` using the data from `read_state`. Do not try to call `done()` and read the data in the same step.
+1. **Combobox / dropdown** — All items are in DOM memory from the moment it opens: extract immediately and finish.
+   For a native `<select>` element with many options: use `evaluate` with `Array.from(element.options).map(o => o.text)` to read all options as plain text. Call `done()` in the **next step** using the data from the action result — not in the same step as the evaluate.
 2. **List with a "Load more" button ("טען עוד" / "הצג עוד תוצאות")** — Click the button in a loop until it disappears, then extract.
 3. **Infinite scroll** — Items load as you scroll: scroll down in a loop until no new items appear, then extract.
 4. **Regular rendered list** (search results, already-loaded cards) — Extract directly from the existing DOM.
