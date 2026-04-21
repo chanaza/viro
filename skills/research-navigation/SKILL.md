@@ -7,6 +7,7 @@ description: >
 
 **Navigation Rules — Identify the component type and determine how to act:**
 1. **Combobox / dropdown** — All items are in DOM memory from the moment it opens: extract immediately and finish.
+   If the page also contains a table or list, **ignore the table** — the combobox is the authoritative source.
    For a native `<select>` element with many options: use `evaluate` with `Array.from(element.options).map(o => o.text)` to read all options as plain text. Call `done()` in the **next step** using the data from the action result — not in the same step as the evaluate.
 2. **List with a "Load more" button ("טען עוד" / "הצג עוד תוצאות")** — Click the button in a loop until it disappears, then extract.
 3. **Infinite scroll** — Items load as you scroll: scroll down in a loop until no new items appear, then extract.
@@ -19,7 +20,7 @@ For paginated content ("הבא" button / page numbers): navigate in ascending or
 - Always try `extract` first — even when you already have information from find_elements about the DOM structure.
 - If extract returned completely empty — one single `evaluate` attempt is allowed.
 - `evaluate` returning `[]` or an error = move immediately to the next site. Any additional `evaluate` attempt is strictly forbidden, no exceptions.
-- Partial result (some fields empty) = full success. Accumulate the data and move immediately to the next site. Do not attempt to improve a result that was already received.
+- Partial result (some fields empty) = full success. Accumulate the data and move immediately to the next site. Do not attempt to improve a result that was already received. Do not combine data from different elements on the same page.
 
 **Stop rule (after each site):**
 - Failed, blocked, or no results → next site in the prescribed sequence.
