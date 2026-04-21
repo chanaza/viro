@@ -7,7 +7,7 @@ description: >
 
 **Navigation Rules — Identify the component type and determine how to act:**
 1. **Combobox / dropdown** — All items are in DOM memory from the moment it opens: extract immediately and finish.
-   If the page also contains a table or list, **ignore the table** — the combobox is the authoritative source.
+   If the page also contains a table or list with the same relevant data, prefer the combobox — extraction is simpler (no pagination or scrolling required).
    For a native `<select>` element with many options: use `evaluate` with `Array.from(element.options).map(o => o.text)` to read all options as plain text. Call `done()` in the **next step** using the data from the action result — not in the same step as the evaluate.
 2. **List with a "Load more" button ("טען עוד" / "הצג עוד תוצאות")** — Click the button in a loop until it disappears, then extract.
 3. **Infinite scroll** — Items load as you scroll: scroll down in a loop until no new items appear, then extract.
