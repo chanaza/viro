@@ -106,21 +106,21 @@ cli/               ← CLI consumer
 
 **שלושה סוגי output (לפי פרמטרי dir):**
 - `agent_log_dir` — `conversation.json` (browser-use LLM log) — תמיד
-- `full_results_dir` — CSV, history, URLs — CLI תמיד; UI לפי `save_full_results` ב-settings
-- `final_response_dir` — `answer.md`, `log.md` — כל caller שרוצה human-readable summary
+- `full_results_dir` — CSV, actions, URLs — CLI תמיד; UI לפי `save_full_results` ב-settings
+- `final_response_dir` — `answer.md`, `steps.md` — כל caller שרוצה human-readable summary
 
 ## הגדרות LLM
 - `thinking_budget=0` — חשיבה מורחבת מבוטלת (מנעה timeout של 75 שניות)
-- `max_output_tokens=32000`
+- `max_output_tokens=65536`
 
 ## אאוטפוט (skill branches)
 קבצים עם prefix `{timestamp}`:
 - `_result.csv` — רשימת סניפים
 - `_sources.csv` — לוג מקורות (visited/found/count/notes)
-- `_history.csv` — היסטוריית פעולות מהסוכן
+- `_actions.csv` — היסטוריית פעולות מהסוכן
 - `_urls.txt` — URLs ייחודיים
 - `_answer.md` — תשובה סופית (final_response_dir בלבד)
-- `_log.md` — לוג steps (final_response_dir בלבד)
+- `_steps.md` — לוג steps (final_response_dir בלבד)
 
 ## סדר מקורות (branches)
 1. האתר הרשמי — גוגל → תוצאה ראשונה אם שייכת לרשת

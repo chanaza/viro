@@ -17,7 +17,8 @@ For paginated content ("הבא" button / page numbers): navigate in ascending or
 **Switching between sites:** Navigate directly to the next site in the current tab (new_tab: False). Do not close tabs and open new ones — this may crash the browser.
 
 **Extracting data from a page:**
-- Always try `extract` first — even when you already have information from find_elements about the DOM structure.
+- **Exception — combobox/dropdown present:** If a combobox or dropdown with relevant data is visible on the page, skip `extract` entirely and follow Navigation Rule #1 (combobox path) directly.
+- Otherwise: Always try `extract` first — even when you already have information from find_elements about the DOM structure.
 - If extract returned completely empty — one single `evaluate` attempt is allowed.
 - `evaluate` returning `[]` or an error = move immediately to the next site. Any additional `evaluate` attempt is strictly forbidden, no exceptions.
 - Partial result (some fields empty) = full success. Accumulate the data and move immediately to the next site. Do not attempt to improve a result that was already received. Do not combine data from different elements on the same page.
