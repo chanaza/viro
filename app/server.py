@@ -14,11 +14,13 @@ from pydantic import BaseModel
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from app.chat_agent import ChatBrowserAgent
+from app.skills_api import router as skills_router, registry as skill_registry
 from core.llm import get_models, get_provider
 from core.profiles import detect_profiles
 from app.user_config import UserSettings, load_settings, save_settings
 
 app = FastAPI()
+app.include_router(skills_router)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 
 
@@ -65,7 +67,7 @@ async def start(body: StartRequest):
     if _agent and _agent.is_running:
         raise HTTPException(400, "Agent is already running. Stop it first.")
     if not _agent or not _agent.is_active:
-        _agent = ChatBrowserAgent()
+        _agent = ChatBrowserAgent(registry=skill_registry)
     await _agent.start(body.task)
     return {"status": "started"}
 
@@ -197,7 +199,7 @@ async def post_settings(body: SettingsRequest):
         anthropic_api_key    = body.anthropic_api_key,
     )
     save_settings(s)
-    _agent = ChatBrowserAgent()
+    _agent = ChatBrowserAgent(registry=skill_registry)
     return {"status": "ok"}
 
 

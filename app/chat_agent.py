@@ -7,6 +7,7 @@ import sys
 from browser_use.browser.profile import ViewportSize
 
 from agent_service.orchestrator import AgentOrchestrator
+from agent_service.skill_registry import SkillRegistry
 from app.llm_config import create_judge_llm, create_llm, create_orchestrator_llm
 from app.user_config import SESSIONS_DIR, load_settings
 from core.profiles import build_browser_profile
@@ -15,7 +16,7 @@ from core.profiles import build_browser_profile
 class ChatBrowserAgent:
     """UI adapter for chat sessions."""
 
-    def __init__(self):
+    def __init__(self, registry: SkillRegistry | None = None):
         if sys.platform == "win32":
             sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
 
@@ -48,6 +49,11 @@ class ChatBrowserAgent:
             full_results_dir=SESSIONS_DIR if settings.save_full_results else None,
             final_response_dir=SESSIONS_DIR,
         )
+        # If a shared registry is provided, replace the orchestrator's own instance
+        # so that skills API changes are immediately visible to the agent.
+        if registry is not None:
+            self._orchestrator._registry = registry
+
         self.queue: asyncio.Queue = asyncio.Queue()
         self._history: list[dict[str, str]] = []
         self._relay_task: asyncio.Task | None = None
@@ -111,6 +117,10 @@ class ChatBrowserAgent:
 
     async def close_browser(self) -> None:
         await self._orchestrator.close_browser()
+
+    def reload_skills(self) -> None:
+        """Reload the skill registry — called after skills are created/updated/deleted."""
+        self._orchestrator._registry.load_all()
 
     @property
     def is_running(self) -> bool:

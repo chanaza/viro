@@ -27,11 +27,17 @@ class SkillRegistry:
     # ── Discovery ─────────────────────────────────────────────────────────────
 
     def load_all(self) -> None:
-        """Scan the skills directory tree and load every SKILL.md found."""
+        """Scan the skills directory tree and load every SKILL.md found.
+
+        Skills with ``active: false`` in their frontmatter are skipped so the
+        agent never sees them.
+        """
         self._skills = {}
         for skill_md in sorted(self._skills_dir.rglob("SKILL.md")):
             try:
                 skill = self._load_skill(skill_md.parent)
+                if not skill.active:
+                    continue  # disabled skill — exclude from agent use
                 self._skills[skill.name] = skill
             except Exception:
                 pass  # malformed skill — skip silently
@@ -66,6 +72,9 @@ class SkillRegistry:
             goal_template   = fm.get("goal"),
             base_skills     = fm.get("requires", []) or [],
             prompt_template = body,
+            display_name    = fm.get("display_name", "").strip(),
+            user_created    = bool(fm.get("user_created", False)),
+            active          = bool(fm.get("active", True)),
         )
         skill._output_schema_class = output_schema_class
         skill._static_context      = static_context

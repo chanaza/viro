@@ -53,6 +53,11 @@ class Skill:
     base_skills:     list[str]                 # base skill names whose bodies are prepended to the prompt
     prompt_template: str                       # raw SKILL.md body (after frontmatter), rendered at build time
 
+    # Optional metadata fields
+    display_name:    str  = ""                 # human-readable name (falls back to name)
+    user_created:    bool = False              # True if created via Skills Builder UI
+    active:          bool = True               # False = skill is disabled, skip during agent use
+
     # Loaded at runtime — not part of the SKILL.md definition
     _output_schema_class: type[Any] | None = field(default=None,         repr=False)
     _static_context:      dict[str, str]   = field(default_factory=dict, repr=False)

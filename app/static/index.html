@@ -89,6 +89,165 @@
   }
   #btn-settings:hover { color: var(--text); background: var(--bg); }
 
+  #btn-skills {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); padding: 4px; border-radius: 6px;
+    display: flex; align-items: center;
+    transition: color 0.15s, background 0.15s;
+  }
+  #btn-skills:hover { color: var(--accent); background: var(--accent-lt); }
+
+  /* ── Skills modal ── */
+  #skills-modal {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(15, 23, 42, 0.5);
+    align-items: center; justify-content: center;
+  }
+  #skills-modal.open { display: flex; }
+  .skills-dialog {
+    background: var(--surface); border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    width: 680px; max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 48px);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .skills-dialog-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .skills-dialog-header h2 { font-size: 0.95rem; font-weight: 700; }
+  .skills-dialog-header-actions { display: flex; align-items: center; gap: 8px; }
+  #btn-close-skills {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 1.1rem; line-height: 1;
+    padding: 2px 6px; border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+  }
+  #btn-close-skills:hover { color: var(--text); background: var(--bg); }
+  #btn-new-skill {
+    padding: 5px 14px; background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s;
+  }
+  #btn-new-skill:hover { background: #4338ca; }
+  .skills-dialog-body {
+    padding: 16px 20px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px; font-size: 0.82rem;
+    flex: 1;
+  }
+  .skills-subtitle {
+    font-size: 0.8rem; color: var(--muted); line-height: 1.5;
+    padding-bottom: 4px;
+  }
+  /* Skill cards grid */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+  }
+  .skill-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+    transition: border-color 0.15s;
+  }
+  .skill-card:hover { border-color: #c7d2fe; }
+  .skill-card.disabled { opacity: 0.5; }
+  .skill-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .skill-card-name { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+  .skill-card-badges { display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
+  .badge {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; border-radius: 4px; padding: 2px 6px;
+  }
+  .badge-builtin { background: #f1f5f9; color: var(--muted); }
+  .badge-custom  { background: var(--accent-lt); color: var(--accent); }
+  .badge-disabled { background: var(--red-lt); color: var(--red); }
+  .skill-card-desc {
+    font-size: 0.78rem; color: var(--muted); line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .skill-card-actions { display: flex; gap: 6px; margin-top: 2px; }
+  .skill-card-actions button {
+    padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted); transition: background 0.15s, color 0.15s;
+  }
+  .skill-card-actions button:hover { background: var(--bg); color: var(--text); }
+  .skill-card-actions .btn-edit:hover { color: var(--accent); border-color: #c7d2fe; background: var(--accent-lt); }
+  .skill-card-actions .btn-disable:hover { color: var(--red); border-color: #fecaca; background: var(--red-lt); }
+  .skill-card-actions .btn-enable:hover  { color: var(--green); border-color: #d1fae5; background: var(--green-lt); }
+
+  /* Edit / Create view */
+  .skills-edit-view { display: flex; flex-direction: column; gap: 14px; }
+  .skills-edit-back {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 0.78rem; font-weight: 600;
+    padding: 0; transition: color 0.15s;
+  }
+  .skills-edit-back:hover { color: var(--accent); }
+  .skills-edit-title { font-size: 0.95rem; font-weight: 700; }
+  .skills-builtin-notice {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 8px 12px; font-size: 0.75rem; color: #92400e; line-height: 1.4;
+  }
+  .skills-field { display: flex; flex-direction: column; gap: 4px; }
+  .skills-field label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+  .skills-field input, .skills-field textarea, .skills-field select {
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 0.82rem; font-family: inherit;
+    background: var(--bg); color: var(--text); outline: none;
+  }
+  .skills-field input:focus, .skills-field textarea:focus, .skills-field select:focus {
+    border-color: var(--accent); background: var(--surface);
+  }
+  .skills-field .field-hint {
+    font-size: 0.7rem; color: var(--muted); line-height: 1.4;
+  }
+  /* Dynamic rows (params / output fields) */
+  .dynamic-rows { display: flex; flex-direction: column; gap: 6px; }
+  .dynamic-row { display: flex; gap: 6px; align-items: center; }
+  .dynamic-row input, .dynamic-row select {
+    flex: 1; padding: 6px 9px; border: 1px solid var(--border); border-radius: 7px;
+    font-size: 0.8rem; font-family: inherit;
+    background: var(--bg); color: var(--text); outline: none;
+  }
+  .dynamic-row input:focus, .dynamic-row select:focus {
+    border-color: var(--accent); background: var(--surface);
+  }
+  .dynamic-row select { flex: 0 0 100px; }
+  .btn-remove-row {
+    background: none; border: none; cursor: pointer;
+    color: #cbd5e1; font-size: 1rem; line-height: 1; padding: 2px 4px;
+    border-radius: 4px; transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-remove-row:hover { color: var(--red); }
+  .btn-add-row {
+    background: none; border: none; cursor: pointer;
+    color: var(--accent); font-size: 0.75rem; font-weight: 600;
+    padding: 2px 0; text-decoration: underline; text-underline-offset: 2px;
+    transition: opacity 0.15s;
+  }
+  .btn-add-row:hover { opacity: 0.7; }
+  .skills-edit-footer {
+    display: flex; gap: 8px; align-items: center; justify-content: flex-end;
+    padding: 12px 20px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  #btn-cancel-skill {
+    padding: 6px 16px; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
+  }
+  #btn-cancel-skill:hover { background: #f1f5f9; }
+  #btn-save-skill {
+    padding: 6px 18px; background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
+  }
+  #btn-save-skill:hover { background: #4338ca; }
+
   /* ── Chat ── */
   #chat {
     flex: 1; overflow-y: auto;
@@ -286,6 +445,39 @@
   textarea:disabled { opacity: .45; cursor: not-allowed; }
   .model-note { font-size: 0.72rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
 
+  /* ── Onboarding ── */
+  .msg-onboarding {
+    align-self: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    max-width: 420px;
+    width: 100%;
+    margin: auto;
+    box-shadow: 0 2px 12px rgba(79,70,229,0.07);
+  }
+  .onboarding-title {
+    font-size: 1rem; font-weight: 700; color: var(--text);
+    margin-bottom: 10px;
+  }
+  .onboarding-body p {
+    font-size: 0.85rem; color: var(--muted); line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .onboarding-body ul {
+    font-size: 0.83rem; color: var(--muted); line-height: 1.7;
+    padding-right: 18px; margin-bottom: 14px;
+  }
+  .onboarding-body li { margin-bottom: 2px; }
+  .onboarding-btn {
+    padding: 8px 18px; background: var(--accent); color: #fff;
+    border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.85rem; font-weight: 600;
+    transition: background 0.15s;
+  }
+  .onboarding-btn:hover { background: #4338ca; }
+
   /* Credential block — shown dynamically */
   .cred-block { display: flex; flex-direction: column; gap: 10px; }
   .cred-block.hidden { display: none; }
@@ -334,7 +526,7 @@
   </div>
   <div class="header-title">
     <h1>Viro</h1>
-    <span class="tagline">Your powerful web action agent</span>
+    <span class="tagline">Your browser-native researcher agent</span>
   </div>
   <div class="status-badge">
     <div id="status-dot" class="idle"></div>
@@ -345,6 +537,12 @@
       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
     </svg>
     Google Auth
+  </button>
+  <button id="btn-skills" title="Skills" onclick="toggleSkills()">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h.5a1.5 1.5 0 010 3H14a1 1 0 00-1 1v.5a1.5 1.5 0 01-3 0V9a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H9a1 1 0 001-1v-.5z"/>
+      <path fill-rule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm8-6a6 6 0 100 12A6 6 0 0010 4z" clip-rule="evenodd"/>
+    </svg>
   </button>
   <button id="btn-settings" title="Settings" onclick="toggleSettings()">
     <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
@@ -509,6 +707,80 @@
   </div>
 </div>
 
+<!-- ── Skills modal ── -->
+<div id="skills-modal" onclick="onSkillsBackdropClick(event)">
+  <div class="skills-dialog">
+    <!-- Header -->
+    <div class="skills-dialog-header">
+      <h2 id="skills-modal-title">Research Skills</h2>
+      <div class="skills-dialog-header-actions">
+        <button id="btn-new-skill" onclick="openNewSkill()" style="display:none">+ New Skill</button>
+        <button id="btn-close-skills" onclick="closeSkills()">✕</button>
+      </div>
+    </div>
+
+    <!-- Body — list view -->
+    <div id="skills-list-view" class="skills-dialog-body">
+      <div class="skills-subtitle">Skills tell Viro exactly how to research a topic — which sites to check, what to look for, and how to structure the results.</div>
+      <div id="skills-grid" class="skills-grid"></div>
+    </div>
+
+    <!-- Body — edit/create view -->
+    <div id="skills-edit-view" class="skills-dialog-body" style="display:none">
+      <div class="skills-edit-view">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="skills-edit-back" onclick="showSkillsList()">← Back</button>
+          <span id="skills-edit-title" class="skills-edit-title">New Skill</span>
+        </div>
+        <div id="skills-builtin-notice" class="skills-builtin-notice" style="display:none">
+          ⚠️ This is a built-in skill. You can edit the instructions, but the name and trigger keywords are fixed.
+        </div>
+
+        <div class="skills-field">
+          <label for="sk-name">Skill name</label>
+          <input id="sk-name" type="text" placeholder="e.g. Company Research"
+                 oninput="onSkillNameInput()" onblur="slugifySkillName()">
+          <span class="field-hint">A short name for this skill, e.g. Company Research</span>
+        </div>
+
+        <div class="skills-field">
+          <label for="sk-when-to-use">When should Viro use this skill?</label>
+          <textarea id="sk-when-to-use" rows="3"
+            placeholder="Describe when to activate this skill. Example: Use when the user asks to research a company, find competitors, or look up business information."></textarea>
+          <span class="field-hint">Describe what kind of request triggers this skill. Include keywords Viro should recognize.</span>
+        </div>
+
+        <div class="skills-field">
+          <label for="sk-subject-label">What should Viro look for?</label>
+          <input id="sk-subject-label" type="text"
+            placeholder="e.g. the company name, the product name">
+          <span class="field-hint">The main thing Viro will research each time you use this skill.</span>
+        </div>
+
+        <div class="skills-field">
+          <label for="sk-instructions">Step-by-step instructions for Viro</label>
+          <textarea id="sk-instructions" rows="8"
+            placeholder="Tell Viro exactly what to do, step by step. Example:&#10;1. Search Google for '{subject} annual report'&#10;2. Navigate to the official website&#10;3. Find the revenue figures..."></textarea>
+          <span class="field-hint">Tell Viro exactly what to do: which websites to visit, what to search for, and in what order.</span>
+        </div>
+
+        <div class="skills-field">
+          <label>What columns do you want in the results?</label>
+          <div id="sk-fields-rows" class="dynamic-rows"></div>
+          <button class="btn-add-row" onclick="addOutputFieldRow()">＋ Add column</button>
+          <span class="field-hint">Viro will extract these fields from each result and save them to a CSV file.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer — edit/create only -->
+    <div id="skills-edit-footer" class="skills-edit-footer" style="display:none">
+      <button id="btn-cancel-skill" onclick="showSkillsList()">Cancel</button>
+      <button id="btn-save-skill" onclick="saveSkill()">Save Skill</button>
+    </div>
+  </div>
+</div>
+
 <div id="chat"></div>
 
 <footer>
@@ -572,11 +844,34 @@
     }
   }
 
+  // ── Session persistence (localStorage) ─────────────────────────────────
+  const _STORAGE_KEY = 'viro_chat_html';
+
+  function _saveChat() {
+    try { localStorage.setItem(_STORAGE_KEY, chat.innerHTML); } catch(e) {}
+  }
+
+  function _restoreChat() {
+    try {
+      const saved = localStorage.getItem(_STORAGE_KEY);
+      if (saved) {
+        chat.innerHTML = saved;
+        // Disable any leftover interactive buttons from previous sessions
+        chat.querySelectorAll('.btn-sec-approve, .btn-sec-reject, #btn-close-browser').forEach(b => b.disabled = true);
+        scrollChat();
+      }
+    } catch(e) {}
+  }
+
+  function _clearChat() {
+    try { localStorage.removeItem(_STORAGE_KEY); } catch(e) {}
+  }
+
   // ── Chat messages ────────────────────────────────────────────────────────
   function addUserMsg(text) {
     const d = document.createElement('div');
     d.className = 'msg-user'; d.textContent = text;
-    chat.appendChild(d); scrollChat();
+    chat.appendChild(d); scrollChat(); _saveChat();
   }
 
   function addAnswerMsg(text, answerPath, logPath) {
@@ -591,13 +886,13 @@
       files += '</div>';
     }
     d.innerHTML = `<div class="answer-label">Answer</div>${body}${files}`;
-    chat.appendChild(d); scrollChat();
+    chat.appendChild(d); scrollChat(); _saveChat();
   }
 
   function addErrorMsg(text) {
     const d = document.createElement('div');
     d.className = 'msg-error'; d.textContent = text;
-    chat.appendChild(d); scrollChat();
+    chat.appendChild(d); scrollChat(); _saveChat();
   }
 
   function addQueuedMsg(text) {
@@ -730,6 +1025,7 @@
     try {
       await post('/reset', {});
       chat.innerHTML = '';
+      _clearChat();
       stepsGroup = null;
       _browserOpenBanner = null;
       if (es) { es.close(); es = null; }
@@ -981,9 +1277,251 @@
     } catch(e) { addErrorMsg(e.message); }
   }
 
-  // Init: load settings to set Google Auth button visibility on startup
-  fetch('/settings').then(r => r.json()).then(syncGoogleAuthBtn).catch(() => {});
+  // ── Skills ───────────────────────────────────────────────────────────────
+  let _skillsData = [];       // cached list from GET /skills
+  let _editingSkill = null;   // null = new, string = name of skill being edited
 
+  function _toTitleCase(slug) {
+    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function _firstSentence(text) {
+    if (!text) return '';
+    const m = text.match(/^[^.!?]+[.!?]?/);
+    return m ? m[0].trim() : text.slice(0, 80);
+  }
+
+  function closeSkills() {
+    document.getElementById('skills-modal').classList.remove('open');
+  }
+
+  function onSkillsBackdropClick(e) {
+    if (e.target === document.getElementById('skills-modal')) closeSkills();
+  }
+
+  function showSkillsList() {
+    document.getElementById('skills-list-view').style.display = '';
+    document.getElementById('skills-edit-view').style.display = 'none';
+    document.getElementById('skills-edit-footer').style.display = 'none';
+    document.getElementById('btn-new-skill').style.display = '';
+    document.getElementById('skills-modal-title').textContent = 'Research Skills';
+    _editingSkill = null;
+  }
+
+  function showSkillsEdit(skill) {
+    _editingSkill = skill ? skill.name : null;
+    document.getElementById('skills-list-view').style.display = 'none';
+    document.getElementById('skills-edit-view').style.display = '';
+    document.getElementById('skills-edit-footer').style.display = '';
+    document.getElementById('btn-new-skill').style.display = 'none';
+    document.getElementById('skills-modal-title').textContent = skill ? 'Edit Skill' : 'New Skill';
+    document.getElementById('skills-edit-title').textContent = skill ? 'Edit Skill' : 'New Skill';
+
+    // Builtin notice
+    const notice = document.getElementById('skills-builtin-notice');
+    notice.style.display = (skill && skill.is_builtin) ? '' : 'none';
+
+    // Populate fields
+    const nameInput = document.getElementById('sk-name');
+    nameInput.value = skill ? skill.name : '';
+    nameInput.disabled = !!skill; // can't rename existing skills
+    document.getElementById('sk-when-to-use').value = skill ? (skill.when_to_use || skill.description || '') : '';
+    document.getElementById('sk-subject-label').value = skill ? (skill.subject_label || '') : '';
+    document.getElementById('sk-instructions').value = skill ? (skill.instructions || '') : '';
+
+    // Output fields
+    const fieldsContainer = document.getElementById('sk-fields-rows');
+    fieldsContainer.innerHTML = '';
+    if (skill && skill.output_fields) {
+      for (const f of skill.output_fields) {
+        _appendOutputFieldRow(f.name, f.type || 'text');
+      }
+    }
+  }
+
+
+  function _appendOutputFieldRow(name, type) {
+    const container = document.getElementById('sk-fields-rows');
+    const row = document.createElement('div');
+    row.className = 'dynamic-row';
+    const typeOptions = ['text', 'number', 'link', 'date']
+      .map(t => `<option value="${t}"${t === type ? ' selected' : ''}>${t.charAt(0).toUpperCase() + t.slice(1)}</option>`)
+      .join('');
+    row.innerHTML =
+      `<input type="text" placeholder="e.g. company name, revenue, website" value="${_esc(name)}">` +
+      `<select>${typeOptions}</select>` +
+      `<button class="btn-remove-row" onclick="this.closest('.dynamic-row').remove()" title="Remove">×</button>`;
+    container.appendChild(row);
+  }
+
+  function addOutputFieldRow() { _appendOutputFieldRow('', 'text'); }
+
+  function onSkillNameInput() {
+    // Live: replace spaces with hyphens as user types
+    const el = document.getElementById('sk-name');
+    const pos = el.selectionStart;
+    el.value = el.value.replace(/ /g, '-');
+    el.setSelectionRange(pos, pos);
+  }
+
+  function slugifySkillName() {
+    const el = document.getElementById('sk-name');
+    el.value = el.value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+  }
+
+  function _esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderSkillsGrid(skills) {
+    const grid = document.getElementById('skills-grid');
+    grid.innerHTML = '';
+    if (!skills.length) {
+      grid.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:8px 0">No skills found.</div>';
+      return;
+    }
+    for (const skill of skills) {
+      const card = document.createElement('div');
+      card.className = 'skill-card' + (skill.active ? '' : ' disabled');
+
+      const badgeBuiltin = skill.is_builtin
+        ? '<span class="badge badge-builtin">Built-in</span>'
+        : '<span class="badge badge-custom">Custom</span>';
+      const badgeDisabled = !skill.active
+        ? '<span class="badge badge-disabled">Disabled</span>'
+        : '';
+
+      const toggleBtn = skill.active
+        ? `<button class="btn-disable" onclick="disableSkill('${_esc(skill.name)}')" title="Disable">Disable</button>`
+        : `<button class="btn-enable" onclick="enableSkill('${_esc(skill.name)}')" title="Enable">Enable</button>`;
+
+      card.innerHTML =
+        `<div class="skill-card-top">` +
+          `<span class="skill-card-name">${_esc(skill.display_name || _toTitleCase(skill.name))}</span>` +
+          `<div class="skill-card-badges">${badgeBuiltin}${badgeDisabled}</div>` +
+        `</div>` +
+        `<div class="skill-card-desc">${_esc(_firstSentence(skill.description))}</div>` +
+        `<div class="skill-card-actions">` +
+          `<button class="btn-edit" onclick="editSkill('${_esc(skill.name)}')">✏ Edit</button>` +
+          toggleBtn +
+        `</div>`;
+      grid.appendChild(card);
+    }
+  }
+
+  async function toggleSkills() {
+    try {
+      const skills = await fetch('/skills').then(r => r.json());
+      _skillsData = skills;
+      renderSkillsGrid(skills);
+      showSkillsList();
+      document.getElementById('skills-modal').classList.add('open');
+    } catch(e) { addErrorMsg(e.message); }
+  }
+
+  function openNewSkill() {
+    showSkillsEdit(null);
+  }
+
+  function editSkill(name) {
+    const skill = _skillsData.find(s => s.name === name);
+    if (!skill) return;
+    showSkillsEdit(skill);
+  }
+
+  async function disableSkill(name) {
+    try {
+      await fetch(`/skills/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      const skills = await fetch('/skills').then(r => r.json());
+      _skillsData = skills;
+      renderSkillsGrid(skills);
+    } catch(e) { addErrorMsg(e.message); }
+  }
+
+  async function enableSkill(name) {
+    try {
+      await post(`/skills/${encodeURIComponent(name)}/enable`, {});
+      const skills = await fetch('/skills').then(r => r.json());
+      _skillsData = skills;
+      renderSkillsGrid(skills);
+    } catch(e) { addErrorMsg(e.message); }
+  }
+
+  async function saveSkill() {
+    slugifySkillName();
+    const name = document.getElementById('sk-name').value.trim();
+    if (!name) { alert('Please enter a skill name.'); return; }
+    if (!/^[a-z0-9][a-z0-9\-]*$/.test(name)) {
+      alert('Skill name must be lowercase letters, numbers, and hyphens only (e.g. company-research).');
+      return;
+    }
+
+    // Collect output fields
+    const fieldRows = document.querySelectorAll('#sk-fields-rows .dynamic-row');
+    const output_fields = [];
+    for (const row of fieldRows) {
+      const fname = row.querySelector('input').value.trim().replace(/\s+/g, '_').toLowerCase();
+      const ftype = row.querySelector('select').value;
+      if (fname) output_fields.push({ name: fname, type: ftype });
+    }
+
+    const body = {
+      name,
+      when_to_use:   document.getElementById('sk-when-to-use').value.trim(),
+      subject_label: document.getElementById('sk-subject-label').value.trim(),
+      instructions:  document.getElementById('sk-instructions').value.trim(),
+      output_fields,
+    };
+
+    try {
+      if (_editingSkill) {
+        await fetch(`/skills/${encodeURIComponent(_editingSkill)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }).then(async r => {
+          if (!r.ok) { const e = await r.json().catch(() => ({detail: r.statusText})); throw new Error(e.detail || r.statusText); }
+        });
+      } else {
+        await post('/skills', body);
+      }
+      const skills = await fetch('/skills').then(r => r.json());
+      _skillsData = skills;
+      renderSkillsGrid(skills);
+      showSkillsList();
+    } catch(e) { addErrorMsg(e.message); }
+  }
+
+  // ── Onboarding ───────────────────────────────────────────────────────────
+  function hasCredentials(cfg) {
+    return !!(cfg.gemini_api_key || cfg.google_cloud_project || cfg.groq_api_key || cfg.openai_api_key || cfg.anthropic_api_key);
+  }
+
+  function showOnboarding() {
+    const d = document.createElement('div');
+    d.className = 'msg-onboarding';
+    d.innerHTML =
+      `<div class="onboarding-title">👋 Welcome to Viro</div>` +
+      `<div class="onboarding-body">` +
+        `<p>Viro is your browser-native researcher agent — it browses the real web on your behalf, follows your research workflows, and delivers structured results.</p>` +
+        `<ul>` +
+          `<li>Grounds every answer in real web data — no hallucinations</li>` +
+          `<li>Secure, transparent, and human-in-the-loop</li>` +
+          `<li>Works alongside you or fully autonomously</li>` +
+          `<li>Available as a chat UI or CLI</li>` +
+        `</ul>` +
+      `</div>` +
+      `<button class="onboarding-btn" onclick="toggleSettings()">⚙️ Open Settings to get started</button>`;
+    chat.appendChild(d);
+  }
+
+  // Init: load settings to set Google Auth button visibility on startup
+  fetch('/settings').then(r => r.json()).then(cfg => {
+    syncGoogleAuthBtn(cfg);
+    if (!hasCredentials(cfg)) showOnboarding();
+  }).catch(() => {});
+
+  _restoreChat();
   setState('idle');
 </script>
 </body>
