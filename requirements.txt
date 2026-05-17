@@ -6,3 +6,4 @@ fastapi
 uvicorn[standard]
 langchain-google-genai
 google-genai
+google-auth-oauthlib

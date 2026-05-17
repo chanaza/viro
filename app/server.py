@@ -225,27 +225,48 @@ async def open_file(body: OpenFileRequest):
 
 # ── Google Auth ───────────────────────────────────────────────────────────────
 
+_GOOGLE_CLIENT_CONFIG = {
+    "installed": {
+        "client_id": "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com",
+        "client_secret": "d-FL95Q19q7MQmFpd7hHD0Ty",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "redirect_uris": ["http://localhost"],
+    }
+}
+_GOOGLE_SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+
+
 @app.post("/auth-google")
 async def auth_google():
-    import subprocess, shutil
-    gcloud = shutil.which("gcloud") or shutil.which("gcloud.cmd")
-    if not gcloud:
-        candidates = [
-            os.path.expandvars(r"%LOCALAPPDATA%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"),
-            os.path.expandvars(r"%ProgramFiles%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"),
-        ]
-        for c in candidates:
-            if os.path.exists(c):
-                gcloud = c
-                break
-    if not gcloud:
-        raise HTTPException(500, "gcloud not found. Install Google Cloud SDK first.")
-    subprocess.Popen(
-        [gcloud, "auth", "application-default", "login"],
-        creationflags=subprocess.CREATE_NO_WINDOW,
-        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
-    return {"status": "launched"}
+    import asyncio
+    import json
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    def _do_auth():
+        flow = InstalledAppFlow.from_client_config(_GOOGLE_CLIENT_CONFIG, _GOOGLE_SCOPES)
+        creds = flow.run_local_server(port=0, open_browser=True)
+        adc_dir = Path(os.environ.get("APPDATA", str(Path.home()))) / "gcloud"
+        adc_dir.mkdir(parents=True, exist_ok=True)
+        (adc_dir / "application_default_credentials.json").write_text(
+            json.dumps({
+                "client_id": creds.client_id,
+                "client_secret": creds.client_secret,
+                "refresh_token": creds.refresh_token,
+                "type": "authorized_user",
+            }, indent=2),
+            encoding="utf-8",
+        )
+
+    loop = asyncio.get_event_loop()
+    try:
+        await asyncio.wait_for(loop.run_in_executor(None, _do_auth), timeout=300)
+    except asyncio.TimeoutError:
+        raise HTTPException(408, "Authentication timed out. Please try again.")
+
+    global _agent
+    _agent = ChatBrowserAgent(registry=skill_registry)
+    return {"status": "ok"}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
