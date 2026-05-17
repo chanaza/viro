@@ -808,6 +808,11 @@
   const statusLbl = document.getElementById('status-label');
   const btnGoogleAuth = document.getElementById('btn-google-auth');
 
+  chat.addEventListener('click', e => {
+    const btn = e.target.closest('.open-file-btn');
+    if (btn) openFile(btn.dataset.path);
+  });
+
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
   });
@@ -871,6 +876,10 @@
     chat.appendChild(d); scrollChat(); _saveChat();
   }
 
+  function _encodePath(p) {
+    return p.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   function addAnswerMsg(text, answerPath, logPath) {
     const d = document.createElement('div');
     d.className = 'msg-answer';
@@ -878,8 +887,8 @@
     let files = '';
     if (answerPath || logPath) {
       files = '<div class="answer-files">';
-      if (answerPath) files += `<button onclick="openFile(${JSON.stringify(answerPath)})">&#128196; Answer file</button>`;
-      if (logPath)    files += `<button onclick="openFile(${JSON.stringify(logPath)})">&#128196; Log file</button>`;
+      if (answerPath) files += `<button class="open-file-btn" data-path="${_encodePath(answerPath)}">&#128196; Answer file</button>`;
+      if (logPath)    files += `<button class="open-file-btn" data-path="${_encodePath(logPath)}">&#128196; Log file</button>`;
       files += '</div>';
     }
     d.innerHTML = `<div class="answer-label">Answer</div>${body}${files}`;
