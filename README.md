@@ -1,59 +1,145 @@
-# Viro — Your Browser-Native Researcher Agent
+# Viro — Your Browser-Native Research Agent
 
-> Grounds every answer in real web data. Secure, transparent, and human-in-the-loop.
+Viro is an AI agent that researches the web the way a human researcher would. Instead of generating answers from memory, it opens a real browser, navigates to the relevant sites, reads through the pages, and extracts exactly the data you need — structured and ready to use.
 
-Viro is an AI-powered research agent that runs on **your own browser**. It navigates the web the way a human researcher would — clicking through complex pages, scrolling to the end, downloading files and reading them, filling in search forms, and following multi-step flows to reach the data that matters. Every result comes from a real page it visited.
-
-Viro is available in two modes:
-- **Windows installer** — for end users, no setup required
-- **Python source** — for developers and automation pipelines (CLI + UI)
+Watch it work in real time. Pause it. Give it new instructions. Every result comes from a page it actually visited.
 
 ---
 
-## Key Capabilities
+## What Viro Can Do
 
-- **Navigates complex sites** — clicks buttons, scrolls, follows pagination, handles dropdowns and multi-step flows
-- **Reads everything** — scrolls to the end of long pages, downloads files (CSV, PDF) and reads their contents
-- **Browser-native sessions** — uses your actual browser profile, so it can access sites where you're already logged in
-- **Structured output** — extracts data into CSV / JSON via predefined schemas, not just free-text summaries
-- **Skills** — repeatable, deterministic research workflows; the agent follows them step by step
-- **Human-in-the-loop** — pause, inject instructions, approve/reject actions, or solve CAPTCHAs manually
-- **Transparent** — watch the browser in real time; every step is logged
-- **Local** — runs on your machine; your data never leaves
+- **Navigate complex sites** — clicks buttons, fills forms, follows pagination, handles dropdowns and multi-step flows
+- **Read everything** — scrolls long pages to the end, downloads and reads files (CSV, PDF), accesses sites where you're already logged in using your own browser session
+- **Extract structured data** — saves results as CSV, not just free-text summaries
+- **Follow repeatable workflows (Skills)** — define exactly which sources to check, in what order, and what to extract; get consistent results every time
+- **Stay in your control** — pause anytime, inject new instructions, solve CAPTCHAs manually, approve or reject flagged actions
 
 ---
 
-## Security
+## Installation
 
-Viro is designed so you stay in control at all times:
-
-- **Security Judge** — optionally configure an LLM that reviews every planned action before it executes. Actions are classified as OK, WARNING (paused for your approval), or CRITICAL (agent stopped immediately). You define the policy in plain text: what the agent may do and what it must never do.
-- **Sensitive data vault** — store credentials and secrets in `core/config/sensitive_data.json` (never committed to git). The agent receives only the key names, never the values — secrets are injected at runtime and never exposed in logs or prompts.
-- **Human-in-the-loop on sensitive sites** — for sites you don't want the agent to log into on its own, you can work alongside it: you handle the login manually in the visible browser window, and the agent continues from there.
-- **Allowed / prohibited domains** — whitelist or blacklist specific domains so the agent never strays outside your intended scope.
-- **No cloud** — the agent runs entirely on your machine. No data is sent to any third-party service beyond the LLM API calls you configure.
+1. Download `Viro_Setup.exe` from the [Releases](../../releases) page
+2. Run the installer — it sets up everything automatically (first run takes a few minutes)
+3. Launch Viro from the desktop shortcut
 
 ---
 
-## Installation — End Users (Windows)
+## First-Time Setup
 
-Download and run `Viro_Setup.exe` from the [Releases](../../releases) page.
+On first launch, open **Settings** (⚙️, top right) and enter your AI model credentials:
 
-The installer sets everything up automatically. When it finishes, double-click the **Viro** icon on your desktop to launch.
+| Provider | Cost | Where to get a key |
+|---|---|---|
+| **Google Gemini** | Free tier available | [aistudio.google.com](https://aistudio.google.com) |
+| **Groq** | Free, no credit card | [console.groq.com](https://console.groq.com) |
+| **OpenAI** | Paid | [platform.openai.com](https://platform.openai.com) |
+| **Anthropic** | Paid | [console.anthropic.com](https://console.anthropic.com) |
 
-**First launch:** The Viro window opens and walks you through configuring your AI model credentials.
+**Recommended starting point:** Gemini 2.5 Flash — best balance of speed, capability, and cost.
 
 ---
 
-## Installation — Developers
+## Using Viro
 
-### Prerequisites
+Type your research task in the chat box and press Enter. A browser window opens and Viro starts working.
 
-- Python 3.11+
-- An AI model API key (see [Supported Models](#supported-models))
-- [Playwright](https://playwright.dev/) browsers installed
+**Example tasks:**
+- `מצא את כל סניפי רמי לוי`
+- `Find all branches of Rami Levy with addresses`
 
-### Setup
+While Viro works, you can:
+- **Pause** — stop the agent and type new instructions mid-task
+- **Resume** — continue from where it stopped
+- **Stop** — end the session immediately
+
+Results are saved automatically when the task completes (see [Output Files](#output-files)).
+
+---
+
+## Settings
+
+| Setting | Description |
+|---|---|
+| **Agent model** | The AI model used for browsing and extraction |
+| **Orchestrator model** | AI model used for understanding your request and deciding the approach (defaults to agent model) |
+| **Max steps** | Maximum number of browser actions per task |
+| **Browser profile** | Which browser profile to use — gives Viro access to your logged-in sessions |
+| **Flash mode** | Faster, lighter browsing for simpler tasks |
+| **Headless** | Run the browser in the background without a visible window |
+| **Keep browser open** | Leave the browser open after the task completes |
+| **Save full results** | Save detailed action logs and URL lists in addition to results |
+| **Allowed / Prohibited domains** | Restrict which sites Viro may visit |
+| **Security Judge** | A second AI model that reviews each planned action before it runs |
+
+---
+
+## Skills
+
+Skills are repeatable research workflows. Each skill tells Viro which sources to check, in what order, and exactly what to extract — so you get consistent results every time, not a different approach on every run.
+
+Viro detects automatically which skill to use based on your request.
+
+### Example Skill (pre-installed): Israeli Retail Branches
+
+Viro comes with one example skill installed out of the box. Send a request like:
+
+> `מצא את כל סניפי רמי לוי`
+
+Viro will check the chain's official site, the government price transparency portal, Facebook/Instagram, aggregator sites, and Google — and save a CSV with every branch's name, address, and city.
+
+### Build Your Own
+
+Use the **Skills Builder** (📋 in the header) to create skills for your own use cases — no coding required:
+
+| Example request | Output |
+|---|---|
+| `Track prices for iPhone 16 on 3 sites` | CSV: site, price, availability |
+| `Find all open tenders on mr.gov.il` | CSV: tender name, deadline, issuing body |
+| `Collect contact info for these 20 companies` | CSV: email, phone, address |
+
+For each skill: describe what request triggers it, give Viro step-by-step instructions, and define which columns to save.
+
+---
+
+## Output Files
+
+Results are saved to `C:\Users\<you>\.viro\sessions\` with a `{timestamp}_{skill}_{subject}` prefix.
+
+| File | Contents |
+|---|---|
+| `_result.csv` | Extracted data (e.g. branch list) |
+| `_sources.csv` | Log of sources visited — URL, found/not found, count |
+| `_answer.md` | Final answer in plain text |
+| `_steps.md` | Step-by-step log of what Viro did |
+
+Additional files saved when **Save full results** is enabled in Settings:
+
+| File | Contents |
+|---|---|
+| `_actions.csv` | Full action history |
+| `_urls.txt` | All unique URLs visited |
+
+---
+
+## Security & Privacy
+
+**Your data stays on your machine.** Viro runs entirely locally — no data is sent to any third party beyond the AI model API calls you configure.
+
+| Feature | How it works |
+|---|---|
+| **Sensitive data vault** | Store credentials (passwords, tokens) in Viro's local vault. The agent receives only the key names, never the values — secrets are never written to logs or prompts. |
+| **Security Judge** | Configure a second AI model to review every planned action before it executes. Actions are classified as OK, WARNING (paused for your approval), or CRITICAL (agent stopped immediately). You define the policy in plain text: what Viro may do and what it must never do. |
+| **Allowed / Prohibited domains** | Whitelist or blacklist specific domains to keep Viro within your intended scope. |
+| **Manual login** | For sites you'd rather Viro not log into on its own — handle the login yourself in the visible browser window, then let Viro continue from there. |
+
+---
+---
+
+## For Developers
+
+### Installation from Source
+
+**Prerequisites:** Python 3.11+, an AI model API key, Playwright
 
 ```bash
 git clone https://github.com/chanaza/viro.git
@@ -65,16 +151,10 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
-### Configure credentials
-
-Copy `.env.example` to `.env` and fill in your credentials:
-
-```bash
-copy .env.example .env
-```
+**Configure credentials** — copy `.env.example` to `.env`:
 
 ```dotenv
-# Option 1 — Gemini API key (free tier available)
+# Option 1 — Gemini API key
 GEMINI_API_KEY=AIza...
 
 # Option 2 — Google Vertex AI
@@ -82,27 +162,21 @@ GOOGLE_CLOUD_PROJECT=my-project
 LLM_LOCATION=europe-west3
 ```
 
-See [Supported Models](#supported-models) for other providers (Groq, OpenAI, Anthropic).
-
 ---
 
-## Running Viro
+### Running
 
-### Chat UI (recommended for end users)
-
+**Chat UI:**
 ```bash
 .venv\Scripts\python run_app.py
 ```
 
-This starts the local server and opens the Viro window automatically in Microsoft Edge.
-
-### CLI (for developers and automation)
-
+**CLI:**
 ```bash
 .venv\Scripts\python cli\main.py
 ```
 
-Configure the task via `cli/.env`:
+Configure via `cli/.env`:
 
 ```dotenv
 SUBJECT=שופרסל
@@ -113,61 +187,33 @@ BROWSER_PROFILE=
 MAX_STEPS=100
 ```
 
-Output files are saved to `cli/output/`.
+CLI output is saved to `cli/output/`.
 
 ---
 
-## Skills — Research Workflows
+### Supported Models
 
-Skills are the core of Viro. A Skill is a predefined research workflow that tells the agent **exactly where to look, in what order, and what to extract**. Instead of letting the model decide freely (which leads to inconsistent results), Skills give you repeatable, reliable research pipelines.
+| Provider | Models | Env var |
+|---|---|---|
+| **Google Gemini** | gemini-2.5-flash *(default)*, gemini-2.5-pro, gemini-2.0-flash, gemini-1.5-pro/flash | `GEMINI_API_KEY` or Vertex AI |
+| **Groq** | llama-3.3-70b, llama-4-scout, qwen3-32b, kimi-k2, llama-3.1-8b | `GROQ_API_KEY` |
+| **OpenAI** | gpt-4o, gpt-4o-mini, o3-mini | `OPENAI_API_KEY` |
+| **Anthropic** | claude-3.5-sonnet, claude-3.5-haiku, claude-3.7-sonnet | `ANTHROPIC_API_KEY` |
 
-### How Skills Work
+---
 
-When you send a task, Viro automatically detects which Skill applies (based on keywords in your request) and activates it. The Skill provides:
+### Creating Skills in Code
 
-- **A goal** — what to find
-- **A step-by-step strategy** — which sources to check, in what order
-- **An output schema** — the structured fields to extract (e.g. name, address, city)
-
-### Skills Builder (UI)
-
-Non-technical users can create, edit, and disable skills directly from the Viro interface — no coding required. Click the **Skills** button (📋) in the header to open the Skills Builder.
-
-The form uses plain language:
-- **Skill name** — a short name for the skill
-- **When should Viro use this?** — describe what kind of request triggers it
-- **What should Viro look for?** — the main subject (e.g. "the company name")
-- **Step-by-step instructions** — tell Viro exactly what to do
-- **What columns do you want in the results?** — define the output fields (saved to CSV)
-
-Built-in skills are visible in the list but their core settings are fixed. Custom skills can be fully edited or disabled at any time.
-
-### Built-in Skills
-
-#### `branches` — Israeli Retail Chain Branches
-Finds all branches of an Israeli retail chain (name, address, city) from up to 5 sources:
-1. The chain's official website
-2. Price transparency portal
-3. Business platforms (Facebook, Instagram)
-4. Aggregators (easy.co.il, Google Maps, d.co.il, etc.)
-5. Google search results
-
-**Example task:** `מצא את כל סניפי רמי לוי`
-
-#### `research-navigation` (base skill)
-Navigation rules used internally by all research skills. Not invoked directly.
-
-### Creating Your Own Skills
-
-Skills live in the `skills/` directory. Each skill is a folder containing a `SKILL.md` file:
+Skills live in `skills/`. Each skill is a folder with a `SKILL.md`:
 
 ```
 skills/
 └── my-skill/
-    └── SKILL.md
+    ├── SKILL.md
+    └── output_schema.py   # optional — enables CSV export
 ```
 
-**Minimal `SKILL.md` structure:**
+**Minimal `SKILL.md`:**
 
 ```markdown
 ---
@@ -184,95 +230,29 @@ goal: 'Research {subject} and find ...'
 ---
 
 Step-by-step instructions for the agent.
-Tell it exactly which sites to visit, in what order,
-and what data to extract from each.
+Tell it which sites to visit, in what order, and what to extract.
 ```
 
-**With structured output** (for CSV export), add an `output_schema.py` alongside `SKILL.md`:
+**With structured output** (for CSV export), add `output_schema.py`:
 
 ```python
 from core.models import SkillOutputModel
 from pydantic import BaseModel
-from typing import Optional
 
 class MyResult(BaseModel):
     name: str
-    value: Optional[str] = None
+    value: str | None = None
     source: str
 
 class MyResultList(SkillOutputModel):
     items: list[MyResult]
 ```
 
-Then reference it in the SKILL.md frontmatter: `output_schema: MyResultList`
+Then reference it in the `SKILL.md` frontmatter: `output_schema: MyResultList`
 
 ---
 
-## Supported Models
-
-Viro supports multiple AI providers. Configure credentials in Settings (UI) or `.env` (CLI).
-
-| Provider | Models | Notes |
-|---|---|---|
-| **Google Gemini** | gemini-2.5-flash *(default)*, gemini-2.5-pro, gemini-2.0-flash, gemini-1.5-pro/flash | Via API key or Vertex AI |
-| **Groq** 🆓 | llama-3.3-70b, llama-4-scout, qwen3-32b, kimi-k2, llama-3.1-8b | Free tier available |
-| **OpenAI** | gpt-4o, gpt-4o-mini, o3-mini | Requires API key |
-| **Anthropic** | claude-3.5-sonnet, claude-3.5-haiku, claude-3.7-sonnet | Requires API key |
-
-**Recommended starting point:** Gemini 2.5 Flash (best balance of speed, capability, and cost).
-
-**Free option:** Any Groq model — no cost, just sign up at [console.groq.com](https://console.groq.com).
-
----
-
-## Settings (UI)
-
-Open Settings via the ⚙️ icon in the top-right corner.
-
-| Setting | Description |
-|---|---|
-| **Agent model** | The LLM used for browsing and extraction |
-| **Orchestrator model** | LLM used for routing and direct answers (defaults to agent model) |
-| **Max steps** | Maximum number of browser actions per task |
-| **Browser profile** | Which browser profile to use (uses your logged-in sessions) |
-| **Flash mode** | Faster, lighter browsing for simple tasks |
-| **Headless** | Run browser without a visible window |
-| **Keep browser open** | Keep the browser open after the task completes |
-| **Allowed / Prohibited domains** | Whitelist or blacklist specific domains |
-| **Advanced Security** | Configure a Security Judge LLM to approve/reject agent actions |
-
----
-
-## Human-in-the-Loop
-
-Viro is designed for transparency and control:
-
-- **Watch it work** — the browser window is visible by default; you can see every page the agent visits
-- **Pause / Resume** — pause at any time and inject new instructions
-- **Stop** — stop the agent immediately
-- **Security Judge** — optionally configure an LLM that reviews each action before it's executed; you approve or reject flagged actions
-- **CAPTCHA assistance** — if the agent hits a CAPTCHA it can't solve, you can solve it manually and the agent continues
-
----
-
-## Output Files
-
-Results are saved to `~/.viro/sessions/` (UI) or `cli/output/` (CLI).
-
-Each run produces files with a `{timestamp}_{skill}_{subject}` prefix:
-
-| File | Contents |
-|---|---|
-| `_result.csv` | Extracted data (e.g. branch list) |
-| `_sources.csv` | Log of sources visited (URL, found/not found, count) |
-| `_actions.csv` | Full action history of the agent |
-| `_urls.txt` | All unique URLs visited |
-| `_answer.md` | Final answer in human-readable Markdown |
-| `_steps.md` | Step-by-step log of what the agent did |
-
----
-
-## Project Structure
+### Project Structure
 
 ```
 viro/
@@ -280,15 +260,30 @@ viro/
 ├── config.py               ← Agent behavior constants
 ├── requirements.txt
 │
-├── core/                   ← Shared utilities (LLM, profiles, prompts)
-├── agent_service/          ← Agent orchestration, security, output saving
-├── skills/                 ← Research skill definitions
-│   ├── research-navigation/   ← Base navigation rules
+├── core/                   ← Shared utilities (LLM factory, profiles, prompts)
+├── agent_service/          ← Agent orchestration, security judge, output saving
+├── skills/                 ← Skill definitions and output schemas
+│   ├── research-navigation/   ← Base navigation rules (used by all skills)
 │   └── branches/              ← Israeli retail branches skill
-├── app/                    ← Chat UI (FastAPI + vanilla JS)
+├── app/                    ← Chat UI (FastAPI + vanilla JS + SSE)
 ├── cli/                    ← CLI entry point
 └── installer/              ← Windows installer (Inno Setup)
 ```
+
+### Architecture
+
+```
+core/           ← shared utilities — no app-level dependencies
+skills/         ← skill definitions, output schemas, context renderers
+agent_service/  ← business logic: browser-use Agent + orchestration
+app/            ← UI layer: FastAPI server, chat adapter, settings
+cli/            ← CLI consumer
+```
+
+**Responsibility boundaries:**
+- `AgentService` — thin wrapper around browser-use Agent; emits: `step`, `done`, `stopped`, `error`
+- `AgentOrchestrator` — routing (BROWSE/ANSWER), skill resolution, security judge, response saving; emits: `skill_matched`, `step`, `security_*`, `done`, `stopped`, `error`
+- `ChatBrowserAgent` — UI adapter: conversation history, relays events to SSE queue
 
 ---
 
