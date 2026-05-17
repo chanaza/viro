@@ -8,6 +8,8 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><circle cx='16' cy='16' r='9' stroke='white' stroke-width='2' fill='none'/><circle cx='16' cy='16' r='3' fill='white'/><line x1='16' y1='7' x2='16' y2='11' stroke='white' stroke-width='2'/><line x1='16' y1='21' x2='16' y2='25' stroke='white' stroke-width='2'/><line x1='7' y1='16' x2='11' y2='16' stroke='white' stroke-width='2'/><line x1='21' y1='16' x2='25' y2='16' stroke='white' stroke-width='2'/></svg>">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  .hidden { display: none !important; }
+  #security-section:not(.hidden) { display: flex !important; flex-direction: column; gap: 12px; }
 
   :root {
     --bg:        #f9fafb;
@@ -100,151 +102,171 @@
   /* ── Skills modal ── */
   #skills-modal {
     display: none; position: fixed; inset: 0; z-index: 100;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(15, 23, 42, 0.45);
     align-items: center; justify-content: center;
   }
   #skills-modal.open { display: flex; }
   .skills-dialog {
-    background: var(--surface); border-radius: 14px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-    width: 680px; max-width: calc(100vw - 32px);
+    background: var(--surface); border-radius: 16px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+    width: 700px; max-width: calc(100vw - 32px);
     max-height: calc(100vh - 48px);
     display: flex; flex-direction: column; overflow: hidden;
   }
   .skills-dialog-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    padding: 18px 22px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  .skills-dialog-header h2 { font-size: 0.95rem; font-weight: 700; }
+  .skills-dialog-header h2 { font-size: 1rem; font-weight: 700; }
   .skills-dialog-header-actions { display: flex; align-items: center; gap: 8px; }
   #btn-close-skills {
     background: none; border: none; cursor: pointer;
     color: var(--muted); font-size: 1.1rem; line-height: 1;
-    padding: 2px 6px; border-radius: 6px;
+    padding: 4px 8px; border-radius: 6px;
     transition: color 0.15s, background 0.15s;
   }
   #btn-close-skills:hover { color: var(--text); background: var(--bg); }
   #btn-new-skill {
-    padding: 5px 14px; background: var(--accent); color: #fff;
-    border: none; border-radius: 8px;
-    font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    padding: 6px 16px; background: var(--accent); color: #fff;
+    border: none; border-radius: 9px;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer;
     transition: background 0.15s;
   }
   #btn-new-skill:hover { background: #4338ca; }
   .skills-dialog-body {
-    padding: 16px 20px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 12px; font-size: 0.82rem;
+    padding: 20px 22px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px; font-size: 0.83rem;
     flex: 1;
   }
   .skills-subtitle {
-    font-size: 0.8rem; color: var(--muted); line-height: 1.5;
-    padding-bottom: 4px;
+    font-size: 0.82rem; color: var(--muted); line-height: 1.6;
   }
-  /* Skill cards grid */
+
+  /* Skill cards */
   .skills-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 12px;
   }
   .skill-card {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
-    padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
-    transition: border-color 0.15s;
+    background: var(--bg); border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 8px;
+    transition: border-color 0.15s, box-shadow 0.15s; cursor: default;
   }
-  .skill-card:hover { border-color: #c7d2fe; }
-  .skill-card.disabled { opacity: 0.5; }
+  .skill-card:hover { border-color: #c7d2fe; box-shadow: 0 2px 12px rgba(79,70,229,.08); }
+  .skill-card.disabled { opacity: 0.45; }
   .skill-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-  .skill-card-name { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+  .skill-card-name { font-size: 0.88rem; font-weight: 700; color: var(--text); line-height: 1.3; }
   .skill-card-badges { display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
   .badge {
-    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
-    text-transform: uppercase; border-radius: 4px; padding: 2px 6px;
+    font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; border-radius: 5px; padding: 2px 7px;
   }
-  .badge-builtin { background: #f1f5f9; color: var(--muted); }
-  .badge-custom  { background: var(--accent-lt); color: var(--accent); }
+  .badge-builtin  { background: #f1f5f9; color: #64748b; }
+  .badge-custom   { background: var(--accent-lt); color: var(--accent); }
   .badge-disabled { background: var(--red-lt); color: var(--red); }
   .skill-card-desc {
-    font-size: 0.78rem; color: var(--muted); line-height: 1.45;
+    font-size: 0.79rem; color: var(--muted); line-height: 1.5;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    flex: 1;
   }
-  .skill-card-actions { display: flex; gap: 6px; margin-top: 2px; }
+  .skill-card-actions { display: flex; gap: 6px; padding-top: 4px; }
   .skill-card-actions button {
-    padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600;
-    cursor: pointer; border: 1px solid var(--border); background: var(--surface);
-    color: var(--muted); transition: background 0.15s, color 0.15s;
+    padding: 4px 12px; border-radius: 7px; font-size: 0.73rem; font-weight: 600;
+    cursor: pointer; border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--muted); transition: all 0.15s;
   }
-  .skill-card-actions button:hover { background: var(--bg); color: var(--text); }
   .skill-card-actions .btn-edit:hover { color: var(--accent); border-color: #c7d2fe; background: var(--accent-lt); }
   .skill-card-actions .btn-disable:hover { color: var(--red); border-color: #fecaca; background: var(--red-lt); }
   .skill-card-actions .btn-enable:hover  { color: var(--green); border-color: #d1fae5; background: var(--green-lt); }
 
   /* Edit / Create view */
-  .skills-edit-view { display: flex; flex-direction: column; gap: 14px; }
+  .skills-edit-view { display: flex; flex-direction: column; gap: 0; }
   .skills-edit-back {
-    display: flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; gap: 5px;
     background: none; border: none; cursor: pointer;
     color: var(--muted); font-size: 0.78rem; font-weight: 600;
-    padding: 0; transition: color 0.15s;
+    padding: 0 0 4px; transition: color 0.15s;
   }
   .skills-edit-back:hover { color: var(--accent); }
-  .skills-edit-title { font-size: 0.95rem; font-weight: 700; }
+  .skills-edit-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; display: block; }
   .skills-builtin-notice {
-    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
-    padding: 8px 12px; font-size: 0.75rem; color: #92400e; line-height: 1.4;
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 9px;
+    padding: 10px 14px; font-size: 0.76rem; color: #92400e; line-height: 1.5;
+    margin-bottom: 16px;
   }
-  .skills-field { display: flex; flex-direction: column; gap: 4px; }
-  .skills-field label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+
+  /* Numbered step blocks */
+  .sk-step {
+    display: flex; gap: 14px; padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .sk-step:last-child { border-bottom: none; }
+  .sk-step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent-lt); color: var(--accent);
+    font-size: 0.75rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .sk-step-body { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .sk-step-title { font-size: 0.86rem; font-weight: 700; color: var(--text); }
+  .sk-step-hint  { font-size: 0.73rem; color: #94a3b8; line-height: 1.5; }
+
+  /* Skills fields */
+  .skills-field { display: flex; flex-direction: column; gap: 5px; }
   .skills-field input, .skills-field textarea, .skills-field select {
-    padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px;
-    font-size: 0.82rem; font-family: inherit;
+    padding: 8px 11px; border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 0.83rem; font-family: inherit;
     background: var(--bg); color: var(--text); outline: none;
+    transition: border-color .15s, background .15s;
   }
   .skills-field input:focus, .skills-field textarea:focus, .skills-field select:focus {
     border-color: var(--accent); background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.08);
   }
-  .skills-field .field-hint {
-    font-size: 0.7rem; color: var(--muted); line-height: 1.4;
-  }
-  /* Dynamic rows (params / output fields) */
-  .dynamic-rows { display: flex; flex-direction: column; gap: 6px; }
-  .dynamic-row { display: flex; gap: 6px; align-items: center; }
+  .skills-field input:disabled { opacity: .5; cursor: not-allowed; background: #f8fafc; }
+
+  /* Dynamic rows (output columns) */
+  .dynamic-rows { display: flex; flex-direction: column; gap: 7px; }
+  .dynamic-row { display: flex; gap: 7px; align-items: center; }
   .dynamic-row input, .dynamic-row select {
-    flex: 1; padding: 6px 9px; border: 1px solid var(--border); border-radius: 7px;
-    font-size: 0.8rem; font-family: inherit;
+    flex: 1; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 0.81rem; font-family: inherit;
     background: var(--bg); color: var(--text); outline: none;
+    transition: border-color .15s;
   }
-  .dynamic-row input:focus, .dynamic-row select:focus {
-    border-color: var(--accent); background: var(--surface);
-  }
-  .dynamic-row select { flex: 0 0 100px; }
+  .dynamic-row input:focus, .dynamic-row select:focus { border-color: var(--accent); }
+  .dynamic-row select { flex: 0 0 96px; }
   .btn-remove-row {
     background: none; border: none; cursor: pointer;
-    color: #cbd5e1; font-size: 1rem; line-height: 1; padding: 2px 4px;
-    border-radius: 4px; transition: color 0.15s;
-    flex-shrink: 0;
+    color: #cbd5e1; font-size: 1.1rem; line-height: 1; padding: 2px 5px;
+    border-radius: 5px; transition: color 0.15s; flex-shrink: 0;
   }
   .btn-remove-row:hover { color: var(--red); }
   .btn-add-row {
+    display: inline-flex; align-items: center; gap: 4px;
     background: none; border: none; cursor: pointer;
-    color: var(--accent); font-size: 0.75rem; font-weight: 600;
-    padding: 2px 0; text-decoration: underline; text-underline-offset: 2px;
-    transition: opacity 0.15s;
+    color: var(--accent); font-size: 0.78rem; font-weight: 600;
+    padding: 4px 0; transition: opacity 0.15s;
   }
   .btn-add-row:hover { opacity: 0.7; }
+
+  /* Skills footer */
   .skills-edit-footer {
     display: flex; gap: 8px; align-items: center; justify-content: flex-end;
-    padding: 12px 20px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
+    padding: 14px 22px 18px; border-top: 1px solid var(--border); flex-shrink: 0;
   }
   #btn-cancel-skill {
-    padding: 6px 16px; background: var(--bg); color: var(--text);
-    border: 1px solid var(--border); border-radius: 8px;
-    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    padding: 7px 18px; background: var(--bg); color: var(--text);
+    border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: background .15s;
   }
   #btn-cancel-skill:hover { background: #f1f5f9; }
   #btn-save-skill {
-    padding: 6px 18px; background: var(--accent); color: #fff;
-    border: none; border-radius: 8px;
-    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    padding: 7px 20px; background: var(--accent); color: #fff;
+    border: none; border-radius: 9px;
+    font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: background .15s;
   }
   #btn-save-skill:hover { background: #4338ca; }
 
@@ -375,54 +397,124 @@
   /* ── Settings modal ── */
   #settings-modal {
     display: none; position: fixed; inset: 0; z-index: 100;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(15, 23, 42, 0.45);
     align-items: center; justify-content: center;
   }
   #settings-modal.open { display: flex; }
   .settings-dialog {
-    background: var(--surface); border-radius: 14px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-    width: 460px; max-width: calc(100vw - 32px);
+    background: var(--surface); border-radius: 16px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+    width: 480px; max-width: calc(100vw - 32px);
     max-height: calc(100vh - 48px);
     display: flex; flex-direction: column; overflow: hidden;
   }
   .settings-dialog-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    padding: 18px 22px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  .settings-dialog-header h2 { font-size: 0.95rem; font-weight: 700; }
+  .settings-dialog-header h2 { font-size: 1rem; font-weight: 700; }
   #btn-close-settings {
     background: none; border: none; cursor: pointer;
     color: var(--muted); font-size: 1.1rem; line-height: 1;
-    padding: 2px 6px; border-radius: 6px;
+    padding: 4px 8px; border-radius: 6px;
     transition: color 0.15s, background 0.15s;
   }
   #btn-close-settings:hover { color: var(--text); background: var(--bg); }
   .settings-dialog-body {
-    padding: 16px 20px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 16px; font-size: 0.82rem;
+    padding: 20px 22px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 20px; font-size: 0.82rem;
   }
-  .s-section-title {
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.06em; color: var(--muted);
-    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+
+  /* Settings sections */
+  .s-section { display: flex; flex-direction: column; gap: 12px; }
+  .s-section-label {
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: #94a3b8;
   }
-  .settings-field { display: flex; flex-direction: column; gap: 4px; }
-  .settings-field label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
-  .settings-field input, .settings-field select {
-    padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px;
-    font-size: 0.82rem; font-family: inherit;
-    background: var(--bg); color: var(--text); outline: none;
-  }
-  .settings-field input:focus, .settings-field select:focus { border-color: var(--accent); background: var(--surface); }
-  .settings-field input[type="password"] { letter-spacing: 0.1em; }
-  .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 400; color: var(--text); cursor: pointer; }
   .s-section-collapsible { cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
   .s-section-collapsible:hover { color: var(--accent); }
   .chevron { display: inline-block; transition: transform .2s; font-style: normal; }
   .chevron.open { transform: rotate(90deg); }
-  .settings-field textarea { padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.82rem; font-family: inherit; background: var(--bg); color: var(--text); outline: none; resize: vertical; }
-  .settings-field textarea:focus { border-color: var(--accent); background: var(--surface); }
+
+  /* Fields */
+  .settings-field { display: flex; flex-direction: column; gap: 5px; }
+  .s-label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+  .settings-field input, .settings-field select, .settings-field textarea {
+    padding: 8px 11px; border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 0.83rem; font-family: inherit;
+    background: var(--bg); color: var(--text); outline: none;
+    transition: border-color .15s, background .15s;
+  }
+  .settings-field input:focus, .settings-field select:focus, .settings-field textarea:focus {
+    border-color: var(--accent); background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.08);
+  }
+  .settings-field input[type="password"] { letter-spacing: 0.12em; }
+  .settings-field textarea { resize: vertical; }
+  .field-hint { font-size: 0.7rem; color: #94a3b8; line-height: 1.45; }
+  .model-note { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+  .s-row { display: flex; gap: 10px; align-items: flex-end; }
+  .s-grow { flex: 1; }
+
+  /* Toggle switches */
+  .s-toggles { display: flex; flex-direction: column; }
+  .s-toggle-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .s-toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .s-toggle-row:first-child { padding-top: 0; }
+  .s-toggle-text { flex: 1; display: flex; flex-direction: column; gap: 2px; line-height: 1; }
+  .s-toggle-main { font-size: 0.83rem; color: var(--text); font-weight: 500; }
+  .s-toggle-sub { font-size: 0.71rem; color: #94a3b8; }
+  .toggle-switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-slider {
+    position: absolute; inset: 0; background: #cbd5e1; border-radius: 22px;
+    cursor: pointer; transition: background .2s;
+  }
+  .toggle-slider:before {
+    content: ''; position: absolute; left: 3px; top: 3px;
+    width: 16px; height: 16px; background: #fff; border-radius: 50%;
+    transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  }
+  .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+  .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+  /* Google auth toggle */
+  .google-auth-toggle {
+    display: flex; border: 1.5px solid var(--border); border-radius: 9px; overflow: hidden;
+  }
+  .google-auth-toggle button {
+    flex: 1; padding: 7px; border: none; background: var(--bg);
+    font-size: 0.79rem; font-weight: 600; color: var(--muted); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .google-auth-toggle button.active { background: var(--accent); color: #fff; }
+  .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text); cursor: pointer; }
+  .cred-block { display: flex; flex-direction: column; gap: 10px; }
+  .cred-block.hidden { display: none; }
+  .s-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+
+  /* Settings footer */
+  .settings-dialog-footer {
+    display: flex; gap: 8px; align-items: center; justify-content: flex-end;
+    padding: 14px 22px 18px; border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  #btn-cancel-settings {
+    padding: 7px 18px; background: var(--bg); color: var(--text);
+    border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: background .15s;
+  }
+  #btn-cancel-settings:hover { background: #f1f5f9; }
+  #btn-save-settings {
+    padding: 7px 20px; background: var(--accent); color: #fff;
+    border: none; border-radius: 9px;
+    font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: background .15s;
+  }
+  #btn-save-settings:hover { background: #4338ca; }
+
+  /* Chat messages misc */
   .msg-browser-open { background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.82rem; color: #1e40af; }
   .msg-browser-open span { flex: 1; }
   #btn-close-browser { padding: 5px 14px; background: #1d4ed8; color: #fff; border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
@@ -440,7 +532,6 @@
   #btn-reset { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
   #btn-reset:hover { border-color: var(--accent); color: var(--accent); }
   textarea:disabled { opacity: .45; cursor: not-allowed; }
-  .model-note { font-size: 0.72rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
 
   /* ── Onboarding ── */
   .msg-onboarding {
@@ -557,140 +648,124 @@
     </div>
     <div class="settings-dialog-body">
 
-      <!-- Model -->
-      <div>
-        <div class="s-section-title">Model</div>
-        <div class="s-2col" style="margin-top:8px">
-          <div class="settings-field">
-            <label>Agent model <span style="font-weight:400;opacity:.6">(browsing)</span></label>
-            <select id="s-model" onchange="onModelChange()"></select>
-            <div id="model-note" class="model-note"></div>
+      <!-- AI Model -->
+      <div class="s-section">
+        <div class="s-section-label">AI Model</div>
+        <div class="settings-field">
+          <select id="s-model" onchange="onModelChange()"></select>
+          <div id="model-note" class="model-note"></div>
+        </div>
+
+        <!-- Credentials — shown dynamically by provider -->
+        <div id="cred-google" class="cred-block hidden">
+          <div class="google-auth-toggle">
+            <button id="auth-btn-apikey" onclick="setGoogleAuth('apikey')">API Key</button>
+            <button id="auth-btn-vertex" onclick="setGoogleAuth('vertex')">Vertex AI</button>
           </div>
+          <div id="cred-google-apikey" class="settings-field hidden">
+            <input id="s-apikey" type="password" placeholder="Gemini API Key  (AIza...)">
+            <span class="field-hint">Free tier available at aistudio.google.com</span>
+          </div>
+          <div id="cred-google-vertex" class="s-2col hidden">
+            <div class="settings-field">
+              <input id="s-project" type="text" placeholder="GCP Project ID">
+            </div>
+            <div class="settings-field">
+              <input id="s-region" type="text" placeholder="Region  (e.g. europe-west3)">
+            </div>
+          </div>
+        </div>
+        <div id="cred-groq" class="cred-block hidden">
           <div class="settings-field">
-            <label>Orchestrator model <span style="font-weight:400;opacity:.6">(routing &amp; direct answers)</span></label>
-            <select id="s-orchestrator-model"></select>
+            <input id="s-groq" type="password" placeholder="Groq API Key  (gsk_...)">
+            <span class="field-hint">Free at console.groq.com — no credit card needed</span>
+          </div>
+        </div>
+        <div id="cred-openai" class="cred-block hidden">
+          <div class="settings-field">
+            <input id="s-openai" type="password" placeholder="OpenAI API Key  (sk-...)">
+          </div>
+        </div>
+        <div id="cred-anthropic" class="cred-block hidden">
+          <div class="settings-field">
+            <input id="s-anthropic" type="password" placeholder="Anthropic API Key  (sk-ant-...)">
           </div>
         </div>
       </div>
 
-      <!-- Credentials — dynamic per provider -->
-      <div>
-        <div class="s-section-title">Credentials</div>
-        <div style="margin-top:8px">
-
-          <!-- Google: API Key or Vertex AI toggle -->
-          <div id="cred-google" class="cred-block hidden">
-            <div class="settings-field">
-              <label>Auth method</label>
-              <div class="google-auth-toggle">
-                <button id="auth-btn-apikey" onclick="setGoogleAuth('apikey')">API Key</button>
-                <button id="auth-btn-vertex" onclick="setGoogleAuth('vertex')">Vertex AI</button>
-              </div>
-            </div>
-            <div id="cred-google-apikey" class="settings-field hidden">
-              <label>Gemini API Key</label>
-              <input id="s-apikey" type="password" placeholder="AIza...">
-            </div>
-            <div id="cred-google-vertex" class="s-2col hidden">
-              <div class="settings-field">
-                <label>Project ID</label>
-                <input id="s-project" type="text" placeholder="my-project">
-              </div>
-              <div class="settings-field">
-                <label>Region</label>
-                <input id="s-region" type="text" placeholder="europe-west3">
-              </div>
-            </div>
-          </div>
-
-          <!-- Groq -->
-          <div id="cred-groq" class="cred-block hidden">
-            <div class="settings-field">
-              <label>Groq API Key</label>
-              <input id="s-groq" type="password" placeholder="gsk_...">
-            </div>
-          </div>
-
-          <!-- OpenAI -->
-          <div id="cred-openai" class="cred-block hidden">
-            <div class="settings-field">
-              <label>OpenAI API Key</label>
-              <input id="s-openai" type="password" placeholder="sk-...">
-            </div>
-          </div>
-
-          <!-- Anthropic -->
-          <div id="cred-anthropic" class="cred-block hidden">
-            <div class="settings-field">
-              <label>Anthropic API Key</label>
-              <input id="s-anthropic" type="password" placeholder="sk-ant-...">
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- General -->
-      <div>
-        <div class="s-section-title">General</div>
-        <div class="s-2col" style="margin-top:8px">
-          <div class="settings-field">
-            <label>Max steps</label>
-            <input id="s-maxsteps" type="number" min="10" max="500" placeholder="100">
-          </div>
-          <div class="settings-field">
-            <label>Browser profile</label>
+      <!-- Browser -->
+      <div class="s-section">
+        <div class="s-section-label">Browser</div>
+        <div class="s-row">
+          <div class="settings-field s-grow">
+            <span class="s-label">Profile</span>
             <select id="profile-select"></select>
           </div>
           <div class="settings-field">
-            <label>Flash mode <span style="font-weight:400;opacity:.6">(faster, less capable)</span></label>
-            <label class="toggle-label"><input id="s-flash" type="checkbox"> Enable</label>
-          </div>
-          <div class="settings-field">
-            <label>Headless <span style="font-weight:400;opacity:.6">(no visible browser)</span></label>
-            <label class="toggle-label"><input id="s-headless" type="checkbox"> Enable</label>
-          </div>
-          <div class="settings-field" style="grid-column:1/-1">
-            <label>Keep browser open <span style="font-weight:400;opacity:.6">(always keep open after task; when off, agent decides)</span></label>
-            <label class="toggle-label"><input id="s-keep-browser-open" type="checkbox"> Always keep open</label>
+            <span class="s-label">Max pages to visit</span>
+            <input id="s-maxsteps" type="number" min="10" max="500" placeholder="100" style="width:90px">
           </div>
         </div>
-        <div class="s-2col" style="margin-top:8px">
-          <div class="settings-field">
-            <label>Allowed domains <span style="font-weight:400;opacity:.6">(comma-separated, empty = all)</span></label>
-            <input id="s-allowed-domains" type="text" placeholder="example.com, another.com">
-          </div>
-          <div class="settings-field">
-            <label>Prohibited domains <span style="font-weight:400;opacity:.6">(comma-separated)</span></label>
-            <input id="s-prohibited-domains" type="text" placeholder="ads.com, tracker.com">
-          </div>
+        <div class="s-toggles">
+          <label class="s-toggle-row">
+            <span class="toggle-switch"><input id="s-keep-browser-open" type="checkbox"><span class="toggle-slider"></span></span>
+            <span class="s-toggle-text">
+              <span class="s-toggle-main">Keep browser open after task</span>
+              <span class="s-toggle-sub">When off, Viro decides whether to keep it open</span>
+            </span>
+          </label>
+          <label class="s-toggle-row">
+            <span class="toggle-switch"><input id="s-headless" type="checkbox"><span class="toggle-slider"></span></span>
+            <span class="s-toggle-text">
+              <span class="s-toggle-main">Run browser in background</span>
+              <span class="s-toggle-sub">No visible window while browsing</span>
+            </span>
+          </label>
+          <label class="s-toggle-row">
+            <span class="toggle-switch"><input id="s-flash" type="checkbox"><span class="toggle-slider"></span></span>
+            <span class="s-toggle-text">
+              <span class="s-toggle-main">Flash mode</span>
+              <span class="s-toggle-sub">Faster, lighter browsing for simpler tasks</span>
+            </span>
+          </label>
         </div>
       </div>
 
-      <!-- Security -->
-      <div>
-        <div class="s-section-title s-section-collapsible" onclick="toggleSecuritySection()">
-          <span>Advanced Security</span>
-          <span id="security-chevron" class="chevron">›</span>
+      <!-- Advanced (collapsible) -->
+      <div class="s-section">
+        <div class="s-section-label s-section-collapsible" onclick="toggleSecuritySection()">
+          Advanced
+          <span id="security-chevron" class="chevron" style="font-size:1rem">›</span>
         </div>
-        <div id="security-section" class="hidden" style="margin-top:8px">
+        <div id="security-section" class="hidden">
+          <div class="settings-field">
+            <span class="s-label">Orchestrator model <span style="font-weight:400;opacity:.6">(routing & direct answers)</span></span>
+            <select id="s-orchestrator-model"></select>
+          </div>
           <div class="s-2col">
             <div class="settings-field">
-              <label>Judge model <span style="font-weight:400;opacity:.6">(empty = same as orchestrator)</span></label>
-              <select id="s-judge-model"></select>
+              <span class="s-label">Allowed domains</span>
+              <input id="s-allowed-domains" type="text" placeholder="example.com, another.com">
+              <span class="field-hint">Empty = allow all sites</span>
             </div>
-            <div class="settings-field" style="align-self:end">
-              <div class="model-note" style="margin-top:4px">When both policy fields below are empty, the security judge is disabled. When active, each agent step calls the judge LLM — adds ~1–3 s per step.</div>
+            <div class="settings-field">
+              <span class="s-label">Blocked domains</span>
+              <input id="s-prohibited-domains" type="text" placeholder="ads.com, tracker.com">
             </div>
           </div>
-          <div class="s-2col" style="margin-top:10px">
+          <div class="settings-field">
+            <span class="s-label">Security judge model <span style="font-weight:400;opacity:.6">(empty = disabled)</span></span>
+            <select id="s-judge-model"></select>
+            <span class="field-hint">Reviews each action before it runs. Adds ~1–3 s per step when active.</span>
+          </div>
+          <div class="s-2col">
             <div class="settings-field">
-              <label>Allowed actions <span style="font-weight:400;opacity:.6">(what the agent MAY do)</span></label>
-              <textarea id="s-allowed-actions" rows="3" placeholder="e.g. Search the web, read pages, extract data. Do not submit any forms."></textarea>
+              <span class="s-label">Allowed actions</span>
+              <textarea id="s-allowed-actions" rows="3" placeholder="What the agent may do…"></textarea>
             </div>
             <div class="settings-field">
-              <label>Denied actions <span style="font-weight:400;opacity:.6">(what the agent must NOT do)</span></label>
-              <textarea id="s-denied-actions" rows="3" placeholder="e.g. Never submit forms, never click purchase or payment buttons."></textarea>
+              <span class="s-label">Denied actions</span>
+              <textarea id="s-denied-actions" rows="3" placeholder="What the agent must NOT do…"></textarea>
             </div>
           </div>
         </div>
@@ -725,48 +800,68 @@
     <!-- Body — edit/create view -->
     <div id="skills-edit-view" class="skills-dialog-body" style="display:none">
       <div class="skills-edit-view">
-        <div style="display:flex;align-items:center;gap:10px">
-          <button class="skills-edit-back" onclick="showSkillsList()">← Back</button>
-          <span id="skills-edit-title" class="skills-edit-title">New Skill</span>
-        </div>
+        <button class="skills-edit-back" onclick="showSkillsList()">← Back</button>
+        <span id="skills-edit-title" class="skills-edit-title">New Skill</span>
         <div id="skills-builtin-notice" class="skills-builtin-notice" style="display:none">
-          ⚠️ This is a built-in skill. You can edit the instructions, but the name and trigger keywords are fixed.
+          This is a built-in skill. You can edit the instructions, but the name and trigger keywords are fixed.
         </div>
 
-        <div class="skills-field">
-          <label for="sk-name">Skill name</label>
-          <input id="sk-name" type="text" placeholder="e.g. Company Research"
-                 oninput="onSkillNameInput()" onblur="slugifySkillName()">
-          <span class="field-hint">A short name for this skill, e.g. Company Research</span>
+        <!-- Step 1: Name -->
+        <div class="sk-step">
+          <div class="sk-step-num">1</div>
+          <div class="sk-step-body">
+            <div class="sk-step-title">Name it</div>
+            <div class="sk-step-hint">A short name you'll recognize, e.g. "Company Research"</div>
+            <div class="skills-field" style="margin-top:8px">
+              <input id="sk-name" type="text" placeholder="Skill name"
+                     oninput="onSkillNameInput()" onblur="slugifySkillName()">
+            </div>
+          </div>
         </div>
 
-        <div class="skills-field">
-          <label for="sk-when-to-use">When should Viro use this skill?</label>
-          <textarea id="sk-when-to-use" rows="3"
-            placeholder="Describe when to activate this skill. Example: Use when the user asks to research a company, find competitors, or look up business information."></textarea>
-          <span class="field-hint">Describe what kind of request triggers this skill. Include keywords Viro should recognize.</span>
+        <!-- Step 2: Trigger -->
+        <div class="sk-step">
+          <div class="sk-step-num">2</div>
+          <div class="sk-step-body">
+            <div class="sk-step-title">When should Viro use this skill?</div>
+            <div class="sk-step-hint">Describe the kind of request that activates it. Include keywords Viro should recognize.</div>
+            <div class="skills-field" style="margin-top:8px">
+              <textarea id="sk-when-to-use" rows="3"
+                placeholder="Example: Use when the user asks to research a company, find competitors, or look up business information."></textarea>
+            </div>
+            <div class="skills-field" style="margin-top:8px">
+              <input id="sk-subject-label" type="text" placeholder="What does the user specify? e.g. the company name, the product name">
+              <span class="field-hint">The main variable Viro will fill in each time — from the user's request.</span>
+            </div>
+          </div>
         </div>
 
-        <div class="skills-field">
-          <label for="sk-subject-label">What should Viro look for?</label>
-          <input id="sk-subject-label" type="text"
-            placeholder="e.g. the company name, the product name">
-          <span class="field-hint">The main thing Viro will research each time you use this skill.</span>
+        <!-- Step 3: Instructions -->
+        <div class="sk-step">
+          <div class="sk-step-num">3</div>
+          <div class="sk-step-body">
+            <div class="sk-step-title">Instructions for Viro</div>
+            <div class="sk-step-hint">Step-by-step: which sites to visit, what to search for, and in what order. Use {subject} where the user's input goes.</div>
+            <div class="skills-field" style="margin-top:8px">
+              <textarea id="sk-instructions" rows="8"
+                placeholder="1. Search Google for '{subject} official site'&#10;2. Navigate to the first relevant result&#10;3. Extract all branch names and addresses..."></textarea>
+            </div>
+          </div>
         </div>
 
-        <div class="skills-field">
-          <label for="sk-instructions">Step-by-step instructions for Viro</label>
-          <textarea id="sk-instructions" rows="8"
-            placeholder="Tell Viro exactly what to do, step by step. Example:&#10;1. Search Google for '{subject} annual report'&#10;2. Navigate to the official website&#10;3. Find the revenue figures..."></textarea>
-          <span class="field-hint">Tell Viro exactly what to do: which websites to visit, what to search for, and in what order.</span>
+        <!-- Step 4: Output columns -->
+        <div class="sk-step">
+          <div class="sk-step-num">4</div>
+          <div class="sk-step-body">
+            <div class="sk-step-title">Output columns</div>
+            <div class="sk-step-hint">Viro will extract these fields from each result and save them to a CSV file.</div>
+            <div style="margin-top:8px">
+              <div id="sk-fields-rows" class="dynamic-rows"></div>
+              <button class="btn-add-row" onclick="addOutputFieldRow()" style="margin-top:6px">＋ Add column</button>
+            </div>
+          </div>
         </div>
 
-        <div class="skills-field">
-          <label>What columns do you want in the results?</label>
-          <div id="sk-fields-rows" class="dynamic-rows"></div>
-          <button class="btn-add-row" onclick="addOutputFieldRow()">＋ Add column</button>
-          <span class="field-hint">Viro will extract these fields from each result and save them to a CSV file.</span>
-        </div>
       </div>
     </div>
 
