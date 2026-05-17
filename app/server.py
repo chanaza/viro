@@ -66,7 +66,7 @@ async def start(body: StartRequest):
     global _agent
     if _agent and _agent.is_running:
         raise HTTPException(400, "Agent is already running. Stop it first.")
-    if not _agent or not _agent.is_active:
+    if not _agent:
         _agent = ChatBrowserAgent(registry=skill_registry)
     await _agent.start(body.task)
     return {"status": "started"}
@@ -214,12 +214,10 @@ async def profiles():
 
 @app.post("/open-file")
 async def open_file(body: OpenFileRequest):
-    import subprocess
     p = Path(body.path)
     if not p.exists():
         raise HTTPException(404, f"File not found: {body.path}")
-    subprocess.Popen(["cmd", "/c", "start", "", str(p)],
-                     creationflags=subprocess.CREATE_NO_WINDOW)
+    os.startfile(str(p))
     return {"status": "opened"}
 
 
