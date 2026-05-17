@@ -41,7 +41,7 @@ You will:
 
 ---
 
-## Phase 1 — Discover all emails
+## Phase 1 — Discover all emails and collect their URLs
 
 1. Navigate to `https://mail.google.com`.
 2. Locate the Gmail search bar — it is the wide input field at the **top center** of the page, with a magnifying glass icon on its left side. It is always visible at the top of Gmail; do not look for it in the sidebar.
@@ -50,34 +50,52 @@ You will:
    `in:"{folder}" has:attachment`
    This instructs Gmail to show only emails in the exact folder "{folder}" that have attachments. Do not modify this query. Do not replace it with a sidebar click.
 5. Wait for the results list to load. Verify the page title shows search results (not an inbox or folder view).
-6. Count the number of email rows visible in the list — call this **N**.
-   If the list has pagination (more than one page), process the current page fully before navigating to the next page.
-7. Note the current URL — this is your **search results URL**. You will return to it after each email.
+6. Use `evaluate` to collect the direct URL of every email row now visible. Run this JavaScript:
+   ```javascript
+   Array.from(document.querySelectorAll('tr[data-legacy-thread-id]'))
+     .map(tr => ({
+       id: tr.getAttribute('data-legacy-thread-id'),
+       url: 'https://mail.google.com/mail/u/0/#all/' + tr.getAttribute('data-legacy-thread-id')
+     }))
+   ```
+   If that returns no results, try the fallback:
+   ```javascript
+   Array.from(document.querySelectorAll('tr[jslog]'))
+     .map(tr => {
+       const id = tr.getAttribute('data-legacy-thread-id') || tr.getAttribute('data-thread-id');
+       return id ? { id, url: 'https://mail.google.com/mail/u/0/#all/' + id } : null;
+     }).filter(Boolean)
+   ```
+7. Store the resulting list of URLs in memory — this is your **email queue**. Call the total count **N**.
+   - Step budget: you have approximately 100 steps total. Reserve 2 steps to set up and 3 steps per email for downloading and extracting. This means you can process at most 30 emails. If N > 30, process the first 30 only.
 
 ---
 
-## Phase 2 — Process each email (repeat for i = 1, 2, … N)
+## Phase 2 — Process each email by direct URL navigation
 
-**Step A — Navigate to the email:**
-- If you are not already on the search results page: navigate to the saved search URL, or click the search bar and repeat `in:"{folder}" has:attachment` and press Enter.
-- Wait for the email list to load.
-- Click on the email at position **i** (1st, 2nd, 3rd… from the top of the list).
+**Do not click emails in the list. Navigate to each email by URL.**
+
+For each email at index i (1 to min(N, 30)):
+
+**Step A — Navigate directly to the email:**
+- Take the URL for email i from your queue (collected in Phase 1).
+- Use `navigate` to go directly to that URL.
+- Wait for the email to load.
 
 **Step B — Find and download PDF attachments:**
 - Scroll to the bottom of the email to reveal attachments.
 - For each file that has a `.pdf` extension or a PDF icon:
   1. Hover over the attachment thumbnail to reveal the action icons.
   2. Click the **download arrow** (the downward-pointing arrow icon on the thumbnail) — do NOT click the thumbnail itself (that opens the PDF inside Gmail in a non-downloadable iframe).
-  3. Wait for the file to download.
+  3. After clicking the download arrow, check `available_file_paths` in the next step — the file appears there once downloaded.
   4. Use `read_file` to read the downloaded PDF.
-  5. Extract test results using the Extraction Rules below.
+  5. Extract test results using the Extraction Rules below and **store them in memory**.
 - If an email has no PDF attachment: skip to Step C.
-- If a PDF download fails (e.g., the iframe is not downloadable): try once more with the download arrow. If it still fails: note the email subject and skip this PDF.
+- If a PDF download fails: try once more with the download arrow. If it still fails, note the email subject and continue to Step C.
 
-**Step C — Return to the list:**
-- Do not close the tab.
-- Click the back arrow in the browser (or the ← back button inside Gmail) to return to the search results.
-- Proceed to email i + 1.
+**Step C — Move to next email:**
+- Take the URL for email i+1 from your queue and navigate to it.
+- Do NOT go back to the search results page between emails. Navigate directly URL to URL.
 
 ---
 
@@ -104,5 +122,7 @@ For each row:
 
 ## Phase 3 — Done
 
-After processing all N emails (or when max steps is approaching):
+After processing all emails in your queue (or when fewer than 10 steps remain):
 Call `done()` with all collected lab results. Include in the `log` field a summary of which emails were processed and which PDFs were skipped.
+
+**Critical rule — no intermediate files:** Do NOT write any data to files during the run. Do not create `lab_results.jsonl`, `todo.md`, or any other file. Accumulate all extracted results in memory only. The output is delivered entirely through the `done()` action's structured fields.
