@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  sanity-check:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Syntax check (all .py files)
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Recurse -Filter "*.py" |
+            Where-Object { $_.FullName -notmatch '\\\.venv\\|\\legacy\\|\\__pycache__\\' }
+          $failed = $false
+          foreach ($f in $files) {
+            python -m py_compile $f.FullName
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "FAIL: $($f.FullName)" -ForegroundColor Red
+              $failed = $true
+            }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Import check
+        run: |
+          python -c "import config"
+          python -c "import core.llm, core.models, core.profiles, core.prompts, core.agent_setup"
+          python -c "import agent_service.service, agent_service.orchestrator, agent_service.skill_registry, agent_service.security_judge, agent_service.errors"
+          python -c "import app.server, app.chat_agent, app.user_config, app.llm_config, app.skills_api, app.skills_manager"
+
+  build-release:
+    needs: sanity-check
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build installer
+        run: iscc installer\viro.iss
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist\Viro_Setup.exe
+          generate_release_notes: true
