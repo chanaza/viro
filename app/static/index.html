@@ -527,6 +527,15 @@
   .security-actions button { padding: 6px 14px; border-radius: 8px; font-size: 0.82rem; cursor: pointer; border: none; }
   .btn-sec-approve { background: var(--accent); color: #fff; }
   .btn-sec-reject  { background: #ef4444; color: #fff; }
+  .msg-skill-matched {
+    align-self: flex-start;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--accent-lt); color: var(--accent);
+    border: 1px solid #c7d2fe;
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 0.75rem;
+  }
+  .skill-badge-icon { font-size: 0.8rem; }
   .msg-queued { opacity: .75; }
   .queued-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--accent); color: #fff; border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
   #btn-reset { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
@@ -996,6 +1005,14 @@
     chat.appendChild(d); scrollChat(); _saveChat();
   }
 
+  function addSkillBadge(skills) {
+    if (!skills || !skills.length) return;
+    const d = document.createElement('div');
+    d.className = 'msg-skill-matched';
+    d.innerHTML = `<span class="skill-badge-icon">⚡</span> Using skill: <strong>${skills.join(', ')}</strong>`;
+    chat.appendChild(d); scrollChat();
+  }
+
   function addQueuedMsg(text) {
     const d = document.createElement('div');
     d.className = 'msg-user msg-queued';
@@ -1062,9 +1079,10 @@
     es.onmessage = e => {
       const ev = JSON.parse(e.data);
       if (ev.type === 'ping') return;
-      if      (ev.type === 'step')    { addStep(ev.step, ev.goal, ev.action); }
-      else if (ev.type === 'paused')  { setState('paused'); }
-      else if (ev.type === 'resumed') { setState('running'); stepsGroup = null; }
+      if      (ev.type === 'step')          { addStep(ev.step, ev.goal, ev.action); }
+      else if (ev.type === 'skill_matched') { addSkillBadge(ev.skills); }
+      else if (ev.type === 'paused')        { setState('paused'); }
+      else if (ev.type === 'resumed')       { setState('running'); stepsGroup = null; }
       else if (ev.type === 'queued')           { addQueuedMsg(ev.message); }
       else if (ev.type === 'security_warning') { addSecurityWarning(ev.goal, ev.action, ev.reason); setState('paused'); }
       else if (ev.type === 'security_stop')    { addSecurityStop(ev.goal, ev.action, ev.reason); setState('done'); es.close(); }

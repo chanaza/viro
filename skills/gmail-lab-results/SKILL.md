@@ -21,11 +21,19 @@ goal: 'Extract {test_filter} lab test results from PDF attachments in the Gmail 
 output_schema: LabResultList
 ---
 
+## Strict navigation rule — read this before anything else
+
+**Do NOT use the Gmail sidebar to navigate to any folder.** The sidebar shows folders as flat items that look separate even when they are nested — clicking a parent label navigates to it without entering the subfolder. This causes you to search in the wrong folder.
+
+**The only permitted navigation method is the Gmail search bar.** Do not click on any label in the sidebar. Do not expand any sidebar section. Use the search bar exclusively.
+
+---
+
 ## Overview
 
 You will:
-1. Search Gmail to get the full list of emails in the folder before opening any.
-2. Process each email exactly once, in order, by re-navigating to the search results between emails.
+1. Search Gmail with a specific query to get the exact list of emails in the target folder — before opening any email.
+2. Process each email exactly once, in order, by re-navigating to the same search results between emails.
 3. For each email: download every PDF attachment, read it, and extract the relevant test results.
 4. Call `done()` when all emails have been processed.
 
@@ -36,13 +44,15 @@ You will:
 ## Phase 1 — Discover all emails
 
 1. Navigate to `https://mail.google.com`.
-2. Click the Gmail search bar at the top of the page.
-3. Type the following query and press Enter:
+2. Locate the Gmail search bar — it is the wide input field at the **top center** of the page, with a magnifying glass icon on its left side. It is always visible at the top of Gmail; do not look for it in the sidebar.
+3. Click the search bar to focus it.
+4. Type the following query **exactly as written** and press Enter:
    `in:"{folder}" has:attachment`
-4. Wait for the results list to load.
-5. Count the number of email rows visible in the list — call this **N**.
+   This instructs Gmail to show only emails in the exact folder "{folder}" that have attachments. Do not modify this query. Do not replace it with a sidebar click.
+5. Wait for the results list to load. Verify the page title shows search results (not an inbox or folder view).
+6. Count the number of email rows visible in the list — call this **N**.
    If the list has pagination (more than one page), process the current page fully before navigating to the next page.
-6. Save the exact URL of this search results page — you will return to it after each email.
+7. Note the current URL — this is your **search results URL**. You will return to it after each email.
 
 ---
 
