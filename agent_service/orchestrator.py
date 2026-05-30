@@ -111,7 +111,7 @@ class AgentOrchestrator:
 
         if resolved:
             self._session_prefix = self._build_prefix(resolved)
-            self._run_task = asyncio.create_task(self._run_browser_task(task, resolved))
+            self._run_task = asyncio.create_task(self._run_browser_task(rendered_task, resolved))
             return
 
         try:
@@ -121,7 +121,7 @@ class AgentOrchestrator:
             return
 
         if needs_browser:
-            self._run_task = asyncio.create_task(self._run_browser_task(task, None))
+            self._run_task = asyncio.create_task(self._run_browser_task(rendered_task, None))
         else:
             self._session_prefix = self._build_prefix(None)
             self._run_task = asyncio.create_task(self._answer_directly(task, rendered_task))
