@@ -40,43 +40,8 @@ def _build_google(model: str, s: LLMSettings) -> BaseChatModel:
 
 
 def _build_groq(model: str, s: LLMSettings) -> BaseChatModel:
-    from browser_use.llm.groq.chat import ChatGroq, JsonSchemaModels
-    from browser_use.llm.schema import SchemaOptimizer
-    from browser_use.llm.views import ChatInvokeCompletion
-    from browser_use.llm.exceptions import ModelProviderError
-
-    if model in JsonSchemaModels:
-        return ChatGroq(model=model, api_key=s.groq_api_key)
-
-    # Models outside JsonSchemaModels don't support json_schema response format.
-    # Override _invoke_structured_output to use tool calling instead.
-    async def _tool_calling_structured(self, groq_messages, output_format):
-        # Groq tool calling requires string content — strip image parts
-        # (text-only models like llama-3.3 can't process images anyway)
-        text_messages = []
-        for msg in groq_messages:
-            content = msg.get('content', '')
-            if isinstance(content, list):
-                content = ' '.join(
-                    p.get('text', '') for p in content
-                    if isinstance(p, dict) and p.get('type') == 'text'
-                )
-            text_messages.append({**msg, 'content': content})
-
-        schema = SchemaOptimizer.create_optimized_json_schema(output_format)
-        response = await self._invoke_with_tool_calling(text_messages, output_format, schema)
-        content = response.choices[0].message.content
-        if not content:
-            tc = response.choices[0].message.tool_calls
-            content = tc[0].function.arguments if tc else None
-        if not content:
-            raise ModelProviderError(
-                message='No structured output in response', status_code=500, model=self.name)
-        parsed = output_format.model_validate_json(content)
-        return ChatInvokeCompletion(completion=parsed, usage=self._get_usage(response))
-
-    GroqFixed = type('ChatGroqFixed', (ChatGroq,), {'_invoke_structured_output': _tool_calling_structured})
-    return GroqFixed(model=model, api_key=s.groq_api_key)
+    from browser_use.llm.groq.chat import ChatGroq
+    return ChatGroq(model=model, api_key=s.groq_api_key)
 
 
 def _build_openai(model: str, s: LLMSettings) -> BaseChatModel:

@@ -44,12 +44,7 @@
     "note": "Fast and cheap — good for straightforward browsing",
     "provider": "openai" },
 
-  { "value": "o3-mini",
-    "label": "o3 Mini",
-    "note": "Strong reasoning model — good for multi-step logic",
-    "provider": "openai" },
-
-  { "value": "claude-3-5-sonnet-20241022",
+{ "value": "claude-3-5-sonnet-20241022",
     "label": "Claude 3.5 Sonnet",
     "note": "Best Anthropic model — precise, thoughtful responses",
     "provider": "anthropic" },
