@@ -677,16 +677,6 @@
             <input id="s-apikey" type="password" placeholder="Gemini API Key  (AIza...)">
             <span class="field-hint">Free tier available at aistudio.google.com</span>
           </div>
-          <div id="cred-google-vertex" class="s-2col hidden">
-            <div class="settings-field">
-              <span class="s-label">GCP Project ID</span>
-              <input id="s-project" type="text" placeholder="my-project-123">
-            </div>
-            <div class="settings-field">
-              <span class="s-label">Region</span>
-              <input id="s-region" type="text" placeholder="e.g. europe-west3">
-            </div>
-          </div>
         </div>
         <div id="cred-groq" class="cred-block hidden">
           <div class="settings-field">
@@ -700,8 +690,24 @@
           </div>
         </div>
         <div id="cred-anthropic" class="cred-block hidden">
-          <div class="settings-field">
+          <div class="google-auth-toggle">
+            <button id="auth-btn-anthropic-apikey" onclick="setAnthropicAuth('apikey')">API Key</button>
+            <button id="auth-btn-anthropic-vertex" onclick="setAnthropicAuth('vertex')">Vertex AI</button>
+          </div>
+          <div id="cred-anthropic-apikey" class="settings-field">
             <input id="s-anthropic" type="password" placeholder="Anthropic API Key  (sk-ant-...)">
+          </div>
+        </div>
+
+        <!-- Shared GCP credentials — shown when any provider uses Vertex AI -->
+        <div id="cred-vertex-shared" class="cred-block hidden">
+          <div class="settings-field">
+            <span class="s-label">GCP Project ID</span>
+            <input id="s-project" type="text" placeholder="my-project-123">
+          </div>
+          <div class="settings-field">
+            <span class="s-label">Region</span>
+            <input id="s-region" type="text" placeholder="e.g. europe-west3">
           </div>
         </div>
       </div>
@@ -1260,12 +1266,29 @@
     if (isVertex) vertexModelName.textContent = cfg.model || 'Vertex';
   }
 
+  function _syncVertexShared() {
+    const needsVertex = (
+      (_currentProvider === 'google'    && _googleAuth    === 'vertex') ||
+      (_currentProvider === 'anthropic' && _anthropicAuth === 'vertex')
+    );
+    document.getElementById('cred-vertex-shared').classList.toggle('hidden', !needsVertex);
+  }
+
   function setGoogleAuth(type) {
     _googleAuth = type;
     document.getElementById('auth-btn-apikey').classList.toggle('active', type === 'apikey');
     document.getElementById('auth-btn-vertex').classList.toggle('active', type === 'vertex');
     document.getElementById('cred-google-apikey').classList.toggle('hidden', type !== 'apikey');
-    document.getElementById('cred-google-vertex').classList.toggle('hidden', type !== 'vertex');
+    _syncVertexShared();
+  }
+
+  let _anthropicAuth = 'apikey';
+  function setAnthropicAuth(type) {
+    _anthropicAuth = type;
+    document.getElementById('auth-btn-anthropic-apikey').classList.toggle('active', type === 'apikey');
+    document.getElementById('auth-btn-anthropic-vertex').classList.toggle('active', type === 'vertex');
+    document.getElementById('cred-anthropic-apikey').classList.toggle('hidden', type !== 'apikey');
+    _syncVertexShared();
   }
 
   function showCredBlock(provider) {
@@ -1273,6 +1296,7 @@
     ['google', 'groq', 'openai', 'anthropic'].forEach(p => {
       document.getElementById(`cred-${p}`).classList.toggle('hidden', p !== provider);
     });
+    _syncVertexShared();
   }
 
   function onModelChange() {
@@ -1332,6 +1356,7 @@
       document.getElementById('s-openai').value   = cfg.openai_api_key       || '';
       document.getElementById('s-anthropic').value = cfg.anthropic_api_key   || '';
       setGoogleAuth(cfg.google_auth_type || 'vertex');
+      setAnthropicAuth(cfg.anthropic_auth_type || 'apikey');
 
       // Show credentials section for active model's provider
       const activeMeta = _allModels.find(m => m.value === cfg.model);
@@ -1380,8 +1405,8 @@
         judge_model:         document.getElementById('s-judge-model').value,
         allowed_actions:     document.getElementById('s-allowed-actions').value.trim(),
         denied_actions:      document.getElementById('s-denied-actions').value.trim(),
-        // always send all keys; server clears irrelevant ones based on google_auth_type
         google_auth_type:     _googleAuth,
+        anthropic_auth_type:  _anthropicAuth,
         gemini_api_key:       document.getElementById('s-apikey').value.trim(),
         google_cloud_project: document.getElementById('s-project').value.trim(),
         llm_location:         document.getElementById('s-region').value.trim(),

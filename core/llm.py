@@ -51,8 +51,20 @@ def _build_openai(model: str, s: LLMSettings) -> BaseChatModel:
 
 def _build_anthropic(model: str, s: LLMSettings) -> BaseChatModel:
     from browser_use.llm.anthropic.chat import ChatAnthropic
-    return ChatAnthropic(model=model, api_key=s.anthropic_api_key,
-                         max_tokens=_MAX_OUTPUT_TOKENS)
+    if s.anthropic_api_key:
+        return ChatAnthropic(model=model, api_key=s.anthropic_api_key,
+                             max_tokens=_MAX_OUTPUT_TOKENS)
+    # No API key → route through Google Cloud Vertex AI
+    if not s.google_cloud_project:
+        raise ValueError("Anthropic via Vertex AI requires a GCP Project ID. Set it in Settings.")
+    import re
+    from anthropic import AsyncAnthropicVertex
+    vertex_model = re.sub(r'-(\d{8})$', r'@\1', model)
+    project, region = s.google_cloud_project, (s.llm_location or "us-east5")
+    def _get_client(self):
+        return AsyncAnthropicVertex(project_id=project, region=region)
+    AnthropicVertexCls = type("AnthropicVertex", (ChatAnthropic,), {"get_client": _get_client})
+    return AnthropicVertexCls(model=vertex_model, max_tokens=_MAX_OUTPUT_TOKENS)
 
 
 _BUILDERS = {

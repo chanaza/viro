@@ -57,8 +57,9 @@ class OpenFileRequest(BaseModel):
     path: str
 
 class SettingsRequest(UserSettings):
-    """Extends UserSettings with the UI-only google_auth_type field."""
-    google_auth_type: str = "vertex"   # "apikey" | "vertex" — not stored, clears the other Google credentials
+    """Extends UserSettings with UI-only auth-type fields (not stored, used to clear the right credentials)."""
+    google_auth_type:    str = "vertex"  # "apikey" | "vertex"
+    anthropic_auth_type: str = "apikey"  # "apikey" | "vertex"
 
 
 # ── Agent routes ──────────────────────────────────────────────────────────────
@@ -178,7 +179,8 @@ async def get_settings():
     s = load_settings()
     return {
         **s.model_dump(),
-        "google_auth_type": "apikey" if s.gemini_api_key else "vertex",
+        "google_auth_type":    "apikey" if s.gemini_api_key    else "vertex",
+        "anthropic_auth_type": "apikey" if s.anthropic_api_key else "vertex",
         "model_provider": get_provider(s.model),
     }
 
@@ -202,12 +204,12 @@ async def post_settings(body: SettingsRequest):
         allowed_actions      = body.allowed_actions,
         denied_actions       = body.denied_actions,
         save_full_results    = body.save_full_results,
-        gemini_api_key       = body.gemini_api_key       if body.google_auth_type == "apikey" else "",
-        google_cloud_project = body.google_cloud_project if body.google_auth_type == "vertex" else "",
-        llm_location         = body.llm_location         if body.google_auth_type == "vertex" else "",
+        gemini_api_key       = body.gemini_api_key    if body.google_auth_type    == "apikey" else "",
+        google_cloud_project = body.google_cloud_project,
+        llm_location         = body.llm_location,
         groq_api_key         = body.groq_api_key,
         openai_api_key       = body.openai_api_key,
-        anthropic_api_key    = body.anthropic_api_key,
+        anthropic_api_key    = body.anthropic_api_key if body.anthropic_auth_type == "apikey" else "",
     )
     save_settings(s)
     from app.chat_agent import ChatBrowserAgent
