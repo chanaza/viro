@@ -52,7 +52,7 @@
   .logo svg { width: 18px; height: 18px; }
   .header-title { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow: hidden; }
   header h1 { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tagline { font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.03em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tagline { font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.03em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 
   .status-badge {
     display: flex; align-items: center; gap: 6px;
@@ -71,18 +71,21 @@
   #status-dot.error   { background: var(--red); }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
 
-  /* Google Auth button — header, Vertex only */
+  /* Vertex re-auth button — same column layout as Skills/Settings */
   #btn-google-auth {
-    display: none;
-    align-items: center; gap: 5px;
-    padding: 4px 11px;
-    background: var(--google); color: #fff;
-    border: none; border-radius: 20px;
-    font-size: 0.72rem; font-weight: 600; cursor: pointer;
-    transition: background 0.15s; white-space: nowrap;
+    background: none; border: none; cursor: pointer;
+    color: var(--google); padding: 5px 7px; border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.03em;
+    flex-shrink: 0; max-width: 56px;
+    transition: color 0.15s, background 0.15s;
   }
-  #btn-google-auth.visible { display: flex; }
-  #btn-google-auth:hover { background: #1557b0; }
+  #btn-google-auth:hover { background: #eff6ff; }
+  #btn-google-auth:disabled { opacity: 0.5; cursor: not-allowed; }
+  #vertex-model-name {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 54px; display: block;
+  }
 
   #btn-settings {
     background: none; border: none; cursor: pointer;
@@ -622,17 +625,16 @@
   </div>
   <div class="header-title">
     <h1>Viro</h1>
-    <span class="tagline">Your browser-native researcher agent</span>
   </div>
   <div class="status-badge">
     <div id="status-dot" class="idle"></div>
     <span id="status-label">Ready</span>
   </div>
-  <button id="btn-google-auth" onclick="doAuthGoogle()" title="Re-authenticate with Google Cloud">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+  <button id="btn-google-auth" onclick="doAuthGoogle()" title="Re-authenticate with Google Vertex AI" class="hidden">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"/>
     </svg>
-    <span id="google-auth-label">Google Auth</span>
+    <span id="vertex-model-name">Vertex</span>
   </button>
   <button id="btn-skills" title="Skills" onclick="toggleSkills()">
     <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -912,7 +914,8 @@
   const btnStop   = document.getElementById('btn-stop');
   const dot       = document.getElementById('status-dot');
   const statusLbl = document.getElementById('status-label');
-  const btnGoogleAuth = document.getElementById('btn-google-auth');
+  const btnGoogleAuth  = document.getElementById('btn-google-auth');
+  const vertexModelName = document.getElementById('vertex-model-name');
 
   chat.addEventListener('click', e => {
     const btn = e.target.closest('.open-file-btn');
@@ -1249,9 +1252,12 @@
   let _currentProvider = 'google';
 
   // Show/hide Google Auth button based on whether Vertex is in use
-  function syncGoogleAuthBtn(cfg) {
-    const isVertex = cfg.google_cloud_project && !cfg.gemini_api_key;
-    btnGoogleAuth.classList.toggle('visible', isVertex);
+  function syncVertexBtn(cfg) {
+    const isVertex = cfg.model_provider === 'google' &&
+                     !!cfg.google_cloud_project &&
+                     !cfg.gemini_api_key;
+    btnGoogleAuth.classList.toggle('hidden', !isVertex);
+    if (isVertex) vertexModelName.textContent = cfg.model || 'Vertex';
   }
 
   function setGoogleAuth(type) {
@@ -1384,24 +1390,23 @@
         anthropic_api_key:    document.getElementById('s-anthropic').value.trim(),
       };
       await post('/settings', body);
-      // Update Google Auth button visibility after save
-      const isVertex = body.google_auth_type === 'vertex' && !!body.google_cloud_project;
-      btnGoogleAuth.classList.toggle('visible', isVertex);
+      syncVertexBtn({ model_provider: _currentProvider, model: body.model,
+                      google_cloud_project: body.google_cloud_project, gemini_api_key: body.gemini_api_key });
       closeSettings();
     } catch(e) { addErrorMsg(e.message); }
   }
 
   async function doAuthGoogle() {
     const btn = document.getElementById('btn-google-auth');
-    const label = document.getElementById('google-auth-label');
+    const span = btn.querySelector('span');
     btn.disabled = true;
-    label.textContent = 'Signing in…';
+    span.textContent = 'Signing in…';
     try {
       await post('/auth-google', {});
-      label.textContent = 'Google Auth';
+      span.textContent = 'Re-auth';
       addErrorMsg('Google authentication successful. You can now start a task.');
     } catch(e) {
-      label.textContent = 'Google Auth';
+      span.textContent = 'Re-auth';
       addErrorMsg('Authentication failed: ' + e.message);
     } finally {
       btn.disabled = false;
@@ -1643,7 +1648,7 @@
 
   // Init: load settings to set Google Auth button visibility on startup
   fetch('/settings').then(r => r.json()).then(cfg => {
-    syncGoogleAuthBtn(cfg);
+    syncVertexBtn(cfg);
     if (!hasCredentials(cfg)) showOnboarding();
   }).catch(() => {});
 

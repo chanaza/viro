@@ -273,7 +273,9 @@ class AgentOrchestrator:
     async def _decide_keep_browser_open(self, task: str, result: str) -> bool:
         if self._keep_browser_open:
             return True
-        prompt = KEEP_BROWSER_PROMPT.format(task=task, result=(result or "")[:500])
+        if not (result or "").strip():
+            return False  # task failed with no result — close browser immediately
+        prompt = KEEP_BROWSER_PROMPT.format(task=task, result=result[:500])
         try:
             response = await self._orchestrator_llm.ainvoke([UserMessage(content=prompt)])
             return "YES" in response.completion.upper()

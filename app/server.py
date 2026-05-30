@@ -174,10 +174,12 @@ async def models():
 
 @app.get("/settings")
 async def get_settings():
+    from core.llm import get_provider
     s = load_settings()
     return {
         **s.model_dump(),
         "google_auth_type": "apikey" if s.gemini_api_key else "vertex",
+        "model_provider": get_provider(s.model),
     }
 
 

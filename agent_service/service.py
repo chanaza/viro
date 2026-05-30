@@ -197,7 +197,10 @@ class AgentService:
         keep_open = False
         if self._should_keep_browser_open:
             try:
-                keep_open = await self._should_keep_browser_open(self._current_task, result or "")
+                keep_open = await asyncio.wait_for(
+                    self._should_keep_browser_open(self._current_task, result or ""),
+                    timeout=15.0,
+                )
             except Exception:
                 keep_open = False
 
