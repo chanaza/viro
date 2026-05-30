@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import os
 import traceback
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -13,11 +16,15 @@ from pydantic import BaseModel
 # Load .env from repo root
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from app.chat_agent import ChatBrowserAgent
+# chat_agent is intentionally NOT imported here — it pulls in browser_use and
+# the full agent stack (~1.5 s). Import lazily on first use instead.
+if TYPE_CHECKING:
+    from app.chat_agent import ChatBrowserAgent
+
 from app.skills_api import router as skills_router, registry as skill_registry
-from core.llm import get_models, get_provider
-from core.profiles import detect_profiles
 from app.user_config import UserSettings, load_settings, save_settings
+# core.llm and core.profiles are deferred — imported inside their endpoints
+# (they pull in browser_use SDK and add ~0.8s to startup)
 
 app = FastAPI()
 app.include_router(skills_router)
@@ -67,6 +74,7 @@ async def start(body: StartRequest):
     if _agent and _agent.is_running:
         raise HTTPException(400, "Agent is already running. Stop it first.")
     if not _agent:
+        from app.chat_agent import ChatBrowserAgent
         _agent = ChatBrowserAgent(registry=skill_registry)
     await _agent.start(body.task)
     return {"status": "started"}
@@ -158,6 +166,7 @@ async def security_reject():
 
 @app.get("/models")
 async def models():
+    from core.llm import get_models
     return {"models": get_models()}
 
 
@@ -199,6 +208,7 @@ async def post_settings(body: SettingsRequest):
         anthropic_api_key    = body.anthropic_api_key,
     )
     save_settings(s)
+    from app.chat_agent import ChatBrowserAgent
     _agent = ChatBrowserAgent(registry=skill_registry)
     return {"status": "ok"}
 
@@ -207,6 +217,7 @@ async def post_settings(body: SettingsRequest):
 
 @app.get("/profiles")
 async def profiles():
+    from core.profiles import detect_profiles
     return {"profiles": detect_profiles(), "active": load_settings().browser_profile}
 
 
@@ -263,6 +274,7 @@ async def auth_google():
         raise HTTPException(408, "Authentication timed out. Please try again.")
 
     global _agent
+    from app.chat_agent import ChatBrowserAgent
     _agent = ChatBrowserAgent(registry=skill_registry)
     return {"status": "ok"}
 

@@ -51,10 +51,10 @@ def _screen_size() -> tuple[int, int]:
 
 def _open_app_window(server: uvicorn.Server) -> None:
     # Poll until the server is actually accepting connections (up to 15 s)
-    for _ in range(30):
+    for _ in range(150):
         if _port_in_use(_PORT):
             break
-        time.sleep(0.5)
+        time.sleep(0.1)
     else:
         return  # server never came up
     sw, sh = _screen_size()

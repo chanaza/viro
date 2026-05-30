@@ -1,14 +1,18 @@
 """SkillRegistry — discovers, loads, matches, and builds prompts for skills."""
+from __future__ import annotations
+
 import importlib.util
 import json
 import re
 import types
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
 
-from browser_use.llm.base import BaseChatModel
-from browser_use.llm.messages import SystemMessage, UserMessage
+if TYPE_CHECKING:
+    from browser_use.llm.base import BaseChatModel
+    from browser_use.llm.messages import SystemMessage, UserMessage
 
 from core.models import Skill, SkillMatch, SkillPreset
 from core.prompts import SKILL_MATCH_PROMPT
@@ -107,6 +111,7 @@ class SkillRegistry:
             skill_list="\n".join(lines),
             request=request,
         )
+        from browser_use.llm.messages import UserMessage
         messages: list = []
         if system_msg:
             messages.append(system_msg)

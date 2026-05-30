@@ -3,12 +3,16 @@
 This module is shared by all callers, including app and CLI.
 It does not depend on application runtime or web-specific layers.
 """
+from __future__ import annotations
+
 import json
 import logging
 from functools import lru_cache
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from browser_use.llm.base import BaseChatModel
+if TYPE_CHECKING:
+    from browser_use.llm.base import BaseChatModel
 
 from .models import LLMSettings
 
