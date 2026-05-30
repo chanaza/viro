@@ -24,29 +24,14 @@
     "note": "Lightweight and fast — good for simple tasks",
     "provider": "google" },
 
-  { "value": "llama-3.3-70b-versatile",
-    "label": "Llama 3.3 70B (Groq 🆓)",
-    "note": "Top free pick — strong reasoning, well-structured output",
-    "provider": "groq", "free": true },
-
   { "value": "meta-llama/llama-4-scout-17b-16e-instruct",
-    "label": "Llama 4 Scout 17B (Groq 🆓)",
-    "note": "Newest Llama — fast with strong reasoning",
-    "provider": "groq", "free": true },
-
-  { "value": "qwen/qwen3-32b",
-    "label": "Qwen3 32B (Groq 🆓)",
-    "note": "Strong structured reasoning — great for data-heavy tasks",
+    "label": "Llama 4 Scout (Groq 🆓)",
+    "note": "Fast and free — vision-capable, works well with browser tasks",
     "provider": "groq", "free": true },
 
   { "value": "moonshotai/kimi-k2-instruct",
     "label": "Kimi K2 (Groq 🆓)",
-    "note": "Excellent at complex, multi-step reasoning",
-    "provider": "groq", "free": true },
-
-  { "value": "llama-3.1-8b-instant",
-    "label": "Llama 3.1 8B (Groq 🆓)",
-    "note": "Ultra-fast — good for quick, simple tasks",
+    "note": "Strong multi-step reasoning — free on Groq",
     "provider": "groq", "free": true },
 
   { "value": "gpt-4o",
