@@ -175,13 +175,16 @@ async def models():
 
 @app.get("/settings")
 async def get_settings():
-    from core.llm import get_provider
+    from core.llm import get_provider, get_models
     s = load_settings()
+    models = get_models()
+    model_label = next((m["label"] for m in models if m["value"] == s.model), s.model)
     return {
         **s.model_dump(),
         "google_auth_type":    "apikey" if s.gemini_api_key    else "vertex",
         "anthropic_auth_type": "apikey" if s.anthropic_api_key else "vertex",
         "model_provider": get_provider(s.model),
+        "model_label":    model_label,
     }
 
 
