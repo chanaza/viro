@@ -212,8 +212,7 @@ async def post_settings(body: SettingsRequest):
         anthropic_api_key    = body.anthropic_api_key if body.anthropic_auth_type == "apikey" else "",
     )
     save_settings(s)
-    from app.chat_agent import ChatBrowserAgent
-    _agent = ChatBrowserAgent(registry=skill_registry)
+    _agent = None  # recreated on next task start with updated settings
     return {"status": "ok"}
 
 
