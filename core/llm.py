@@ -51,8 +51,20 @@ def _build_groq(model: str, s: LLMSettings) -> BaseChatModel:
     # Models outside JsonSchemaModels don't support json_schema response format.
     # Override _invoke_structured_output to use tool calling instead.
     async def _tool_calling_structured(self, groq_messages, output_format):
+        # Groq tool calling requires string content — strip image parts
+        # (text-only models like llama-3.3 can't process images anyway)
+        text_messages = []
+        for msg in groq_messages:
+            content = msg.get('content', '')
+            if isinstance(content, list):
+                content = ' '.join(
+                    p.get('text', '') for p in content
+                    if isinstance(p, dict) and p.get('type') == 'text'
+                )
+            text_messages.append({**msg, 'content': content})
+
         schema = SchemaOptimizer.create_optimized_json_schema(output_format)
-        response = await self._invoke_with_tool_calling(groq_messages, output_format, schema)
+        response = await self._invoke_with_tool_calling(text_messages, output_format, schema)
         content = response.choices[0].message.content
         if not content:
             tc = response.choices[0].message.tool_calls

@@ -165,8 +165,15 @@ class AgentService:
         agent = self._agent
         if agent is None:
             return
+        self._done_callback_fired = False
         try:
             await agent.run(max_steps=self._max_steps)
+            # Fallback: browser_use may not call _on_done when stopping due to
+            # consecutive failures. Ensure the consumer always gets a terminal event.
+            if not self._done_callback_fired:
+                await self._event_queue.put(
+                    {"type": "done", "result": "", "browser_open": False, "saved": {}}
+                )
         except asyncio.CancelledError:
             await self._event_queue.put({"type": "stopped"})
         except Exception as e:
@@ -189,6 +196,7 @@ class AgentService:
         await self._event_queue.put({"type": "step", "step": step_num, "goal": goal, "action": action_name})
 
     async def _on_done(self, history) -> None:
+        self._done_callback_fired = True
         result = history.final_result() if history else ""
         saved = {}
         if self._full_results_dir and history:
