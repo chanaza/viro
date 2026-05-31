@@ -1,8 +1,18 @@
 [
+  { "value": "gemini-3.5-flash",
+    "label": "Gemini 3.5 Flash",
+    "note": "Latest stable Gemini — best all-around starting point",
+    "provider": "google", "default": true },
+
+  { "value": "gemini-3.1-flash-lite",
+    "label": "Gemini 3.1 Flash Lite",
+    "note": "Fast and lightweight — good for high-volume or simple tasks",
+    "provider": "google" },
+
   { "value": "gemini-2.5-flash",
     "label": "Gemini 2.5 Flash",
-    "note": "Best all-around — recommended starting point",
-    "provider": "google", "default": true },
+    "note": "Proven and reliable — solid everyday choice",
+    "provider": "google" },
 
   { "value": "gemini-2.5-flash-lite",
     "label": "Gemini 2.5 Flash Lite",
