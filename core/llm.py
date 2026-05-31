@@ -17,7 +17,8 @@ if TYPE_CHECKING:
 from .models import LLMSettings
 
 _MODELS_PATH = Path(__file__).parent / "config" / "llm_providers.json"
-_MAX_OUTPUT_TOKENS = 65_536
+_MAX_OUTPUT_TOKENS           = 65_536
+_MAX_OUTPUT_TOKENS_ANTHROPIC = 8_192   # Anthropic SDK requires streaming above ~21k tokens
 
 
 # ── Per-provider builders ─────────────────────────────────────────────────────
@@ -53,7 +54,7 @@ def _build_anthropic(model: str, s: LLMSettings) -> BaseChatModel:
     from browser_use.llm.anthropic.chat import ChatAnthropic
     if s.anthropic_api_key:
         return ChatAnthropic(model=model, api_key=s.anthropic_api_key,
-                             max_tokens=_MAX_OUTPUT_TOKENS)
+                             max_tokens=_MAX_OUTPUT_TOKENS_ANTHROPIC)
     # No API key → route through Google Cloud Vertex AI
     if not s.google_cloud_project:
         raise ValueError("Anthropic via Vertex AI requires a GCP Project ID. Set it in Settings.")
@@ -64,7 +65,7 @@ def _build_anthropic(model: str, s: LLMSettings) -> BaseChatModel:
     def _get_client(self):
         return AsyncAnthropicVertex(project_id=project, region=region)
     AnthropicVertexCls = type("AnthropicVertex", (ChatAnthropic,), {"get_client": _get_client})
-    return AnthropicVertexCls(model=vertex_model, max_tokens=_MAX_OUTPUT_TOKENS)
+    return AnthropicVertexCls(model=vertex_model, max_tokens=_MAX_OUTPUT_TOKENS_ANTHROPIC)
 
 
 _BUILDERS = {
