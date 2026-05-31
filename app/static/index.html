@@ -686,7 +686,10 @@
     </svg>
   </div>
   <div class="header-title">
-    <h1>Viro <span id="status-dot" class="idle" title="Ready"></span></h1>
+    <div style="display:flex;align-items:center;gap:5px">
+      <h1>Viro</h1>
+      <span id="status-dot" class="idle" title="Ready"></span>
+    </div>
   </div>
   <span id="header-model-label" class="header-model-label hidden"></span>
   <button id="btn-google-auth" onclick="doAuthGoogle()" title="Re-authenticate with Google Vertex AI" class="hidden">

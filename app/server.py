@@ -83,7 +83,11 @@ async def start(body: StartRequest):
 
 @app.get("/stream")
 async def stream():
-    agent = _require_agent()
+    # Don't require is_active: fast ANSWER responses complete before the
+    # SSE connection is established. The done event sits in the queue.
+    if not _agent:
+        raise HTTPException(400, "No active session. Start one first.")
+    agent = _agent
 
     async def event_generator():
         while True:
