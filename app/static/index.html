@@ -556,37 +556,59 @@
   textarea:disabled { opacity: .45; cursor: not-allowed; }
 
   /* ── Onboarding ── */
-  .msg-onboarding {
-    align-self: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px 28px;
-    max-width: 400px;
-    width: 100%;
-    margin: auto;
-    box-shadow: 0 4px 24px rgba(79,70,229,0.08);
+  .ob-card {
+    align-self: center; margin: auto;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px 24px;
+    max-width: 420px; width: 100%;
+    box-shadow: 0 8px 40px rgba(79,70,229,0.09);
+    display: flex; flex-direction: column; gap: 22px;
   }
-  .onboarding-title {
-    font-size: 1.05rem; font-weight: 700; color: var(--text);
-    margin-bottom: 10px;
+  .ob-header { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+  .ob-icon {
+    width: 52px; height: 52px; background: var(--accent);
+    border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .onboarding-body p {
-    font-size: 0.88rem; color: var(--muted); line-height: 1.65;
-    margin-bottom: 12px;
+  .ob-icon svg { width: 32px; height: 32px; }
+  .ob-title { font-size: 1.2rem; font-weight: 800; }
+  .ob-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; max-width: 320px; }
+  .ob-block { display: flex; flex-direction: column; gap: 10px; }
+  .ob-block-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #94a3b8; }
+  .ob-providers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ob-prov {
+    border: 1.5px solid var(--border); border-radius: 10px;
+    background: var(--bg); padding: 10px 12px;
+    cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: 3px;
+    transition: border-color .15s, background .15s; position: relative;
   }
-  .onboarding-body ul {
-    font-size: 0.85rem; color: var(--muted); line-height: 1.75;
-    padding-right: 18px; margin-bottom: 18px;
+  .ob-prov:hover { border-color: #c7d2fe; background: var(--accent-lt); }
+  .ob-prov-selected { border-color: var(--accent) !important; background: var(--accent-lt) !important; }
+  .ob-prov-name { font-size: 0.84rem; font-weight: 700; color: var(--text); }
+  .ob-prov-free {
+    position: absolute; top: 7px; right: 8px;
+    font-size: 0.58rem; font-weight: 800; text-transform: uppercase;
+    background: #dcfce7; color: #166534; border-radius: 4px; padding: 1px 5px; letter-spacing: 0.04em;
   }
-  .onboarding-body li { margin-bottom: 3px; }
-  .onboarding-btn {
-    padding: 9px 20px; background: var(--accent); color: #fff;
-    border: none; border-radius: 9px; cursor: pointer;
-    font-size: 0.88rem; font-weight: 600;
-    transition: background 0.15s;
+  .ob-prov-sub { font-size: 0.71rem; color: var(--muted); }
+  .ob-hint { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
+  .ob-hint a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .ob-hint a:hover { text-decoration: underline; }
+  .ob-key {
+    padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 0.88rem; font-family: inherit; outline: none;
+    background: var(--bg); color: var(--text);
+    transition: border-color .15s, background .15s; letter-spacing: 0.06em;
   }
-  .onboarding-btn:hover { background: #4338ca; }
+  .ob-key:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(79,70,229,.08); }
+  .ob-err { font-size: 0.78rem; color: var(--red); background: var(--red-lt); border-radius: 8px; padding: 8px 12px; }
+  .ob-go {
+    padding: 13px; background: var(--accent); color: #fff;
+    border: none; border-radius: 12px; font-size: 0.9rem; font-weight: 700;
+    cursor: pointer; transition: background .15s;
+  }
+  .ob-go:hover:not(:disabled) { background: #4338ca; }
+  .ob-go:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* Credential block — shown dynamically */
   .cred-block { display: flex; flex-direction: column; gap: 10px; }
@@ -1668,16 +1690,105 @@
     return !!(cfg.gemini_api_key || cfg.google_cloud_project || cfg.groq_api_key || cfg.openai_api_key || cfg.anthropic_api_key);
   }
 
+  const _OB_CFG = {
+    groq:      { model: 'meta-llama/llama-4-scout-17b-16e-instruct', placeholder: 'gsk_...', hint: 'Free — no credit card needed. Get your key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com →</a>' },
+    google:    { model: 'gemini-2.5-flash',              placeholder: 'AIza...',    hint: 'Free tier available. Get your key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com →</a>' },
+    openai:    { model: 'gpt-4o',                        placeholder: 'sk-...',     hint: 'Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com →</a>' },
+    anthropic: { model: 'claude-3-5-sonnet-20241022',    placeholder: 'sk-ant-...', hint: 'Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com →</a>' },
+  };
+  let _obProvider = 'groq';
+
+  function obPick(btn) {
+    document.querySelectorAll('.ob-prov').forEach(b => b.classList.remove('ob-prov-selected'));
+    btn.classList.add('ob-prov-selected');
+    _obProvider = btn.dataset.p;
+    const cfg = _OB_CFG[_obProvider];
+    const keyEl = document.getElementById('ob-key');
+    keyEl.placeholder = cfg.placeholder;
+    keyEl.value = '';
+    document.getElementById('ob-hint').innerHTML = cfg.hint;
+    document.getElementById('ob-go').disabled = true;
+    document.getElementById('ob-err').classList.add('hidden');
+  }
+
+  async function obConnect() {
+    const key = document.getElementById('ob-key').value.trim();
+    if (!key) return;
+    const btn = document.getElementById('ob-go');
+    const errEl = document.getElementById('ob-err');
+    btn.disabled = true; btn.textContent = 'Connecting…';
+    errEl.classList.add('hidden');
+    const p = _obProvider;
+    const body = {
+      model: _OB_CFG[p].model, orchestrator_model: '',
+      max_steps: 100, flash_mode: false, browser_profile: 'viro',
+      headless: false, keep_browser_open: false,
+      allowed_domains: '', prohibited_domains: '',
+      judge_model: '', allowed_actions: '', denied_actions: '', save_full_results: false,
+      google_auth_type: p === 'google' ? 'apikey' : 'vertex',
+      anthropic_auth_type: p === 'anthropic' ? 'apikey' : 'apikey',
+      gemini_api_key:    p === 'google'    ? key : '',
+      google_cloud_project: '', llm_location: '',
+      groq_api_key:      p === 'groq'      ? key : '',
+      openai_api_key:    p === 'openai'    ? key : '',
+      anthropic_api_key: p === 'anthropic' ? key : '',
+    };
+    try {
+      await post('/settings', body);
+      document.querySelector('.ob-card').remove();
+      const newCfg = await fetch('/settings').then(r => r.json());
+      syncHeaderModel(newCfg);
+    } catch(e) {
+      errEl.textContent = 'Could not save: ' + e.message;
+      errEl.classList.remove('hidden');
+      btn.disabled = false; btn.textContent = 'Connect and start →';
+    }
+  }
+
   function showOnboarding() {
     const d = document.createElement('div');
-    d.className = 'msg-onboarding';
-    d.innerHTML =
-      `<div class="onboarding-title">Welcome to Viro</div>` +
-      `<div class="onboarding-body">` +
-        `<p>Viro researches the web on your behalf — it opens a real browser, navigates to the relevant sites, and extracts the data you need, structured and ready to use.</p>` +
-        `<p>To get started, connect an AI model.</p>` +
-      `</div>` +
-      `<button class="onboarding-btn" onclick="toggleSettings()">Open Settings</button>`;
+    d.className = 'ob-card';
+    d.innerHTML = `
+      <div class="ob-header">
+        <div class="ob-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4,7 L11,7 L17,26 L10,26 Z M21,7 L28,7 L22,26 L15,26 Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="ob-title">Welcome to Viro</div>
+        <div class="ob-desc">Your personal research agent — describe what you need, and Viro browses the web and delivers structured results.</div>
+      </div>
+      <div class="ob-block">
+        <div class="ob-block-label">Step 1 &nbsp;·&nbsp; Choose an AI service</div>
+        <div class="ob-providers">
+          <button class="ob-prov ob-prov-selected" data-p="groq" onclick="obPick(this)">
+            <span class="ob-prov-name">⚡ Groq</span>
+            <span class="ob-prov-free">FREE</span>
+            <span class="ob-prov-sub">No credit card needed</span>
+          </button>
+          <button class="ob-prov" data-p="google" onclick="obPick(this)">
+            <span class="ob-prov-name">Google Gemini</span>
+            <span class="ob-prov-sub">Free tier available</span>
+          </button>
+          <button class="ob-prov" data-p="openai" onclick="obPick(this)">
+            <span class="ob-prov-name">OpenAI</span>
+            <span class="ob-prov-sub">GPT-4o</span>
+          </button>
+          <button class="ob-prov" data-p="anthropic" onclick="obPick(this)">
+            <span class="ob-prov-name">Anthropic</span>
+            <span class="ob-prov-sub">Claude</span>
+          </button>
+        </div>
+      </div>
+      <div class="ob-block">
+        <div class="ob-block-label">Step 2 &nbsp;·&nbsp; Enter your access key</div>
+        <div class="ob-hint" id="ob-hint">Free — no credit card needed. Get your key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com →</a></div>
+        <input type="password" id="ob-key" class="ob-key" placeholder="gsk_..."
+               oninput="document.getElementById('ob-go').disabled=!this.value.trim()">
+        <div class="ob-err hidden" id="ob-err"></div>
+      </div>
+      <button id="ob-go" class="ob-go" onclick="obConnect()" disabled>Connect and start →</button>
+    `;
     chat.appendChild(d);
   }
 
