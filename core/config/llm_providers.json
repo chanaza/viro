@@ -4,24 +4,14 @@
     "note": "Best all-around — recommended starting point",
     "provider": "google", "default": true },
 
-  { "value": "gemini-2.0-flash",
-    "label": "Gemini 2.0 Flash",
-    "note": "Fast and capable — solid everyday choice",
+  { "value": "gemini-2.5-flash-lite",
+    "label": "Gemini 2.5 Flash Lite",
+    "note": "Lighter and cheaper 2.5 — good for high-volume tasks",
     "provider": "google" },
 
   { "value": "gemini-2.5-pro",
     "label": "Gemini 2.5 Pro",
-    "note": "Strongest Google model — best for complex tasks",
-    "provider": "google" },
-
-  { "value": "gemini-1.5-pro",
-    "label": "Gemini 1.5 Pro",
-    "note": "Long context (2M tokens) — good for large pages",
-    "provider": "google" },
-
-  { "value": "gemini-1.5-flash",
-    "label": "Gemini 1.5 Flash",
-    "note": "Lightweight and fast — good for simple tasks",
+    "note": "Most capable Google model — best for complex research",
     "provider": "google" },
 
   { "value": "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -29,33 +19,58 @@
     "note": "Fast and free — vision-capable, works well with browser tasks",
     "provider": "groq", "free": true },
 
+  { "value": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "label": "Llama 4 Maverick (Groq 🆓)",
+    "note": "Larger free model — stronger reasoning than Scout",
+    "provider": "groq", "free": true },
+
   { "value": "moonshotai/kimi-k2-instruct",
     "label": "Kimi K2 (Groq 🆓)",
     "note": "Strong multi-step reasoning — free on Groq",
     "provider": "groq", "free": true },
 
+  { "value": "gpt-4.1",
+    "label": "GPT-4.1",
+    "note": "OpenAI latest flagship — top instruction following and vision",
+    "provider": "openai" },
+
+  { "value": "gpt-4.1-mini",
+    "label": "GPT-4.1 Mini",
+    "note": "Fast and affordable GPT-4.1 — good balance of speed and quality",
+    "provider": "openai" },
+
   { "value": "gpt-4o",
     "label": "GPT-4o",
-    "note": "OpenAI flagship — excellent instruction following",
+    "note": "Previous OpenAI flagship — battle-tested and reliable",
     "provider": "openai" },
 
   { "value": "gpt-4o-mini",
     "label": "GPT-4o Mini",
-    "note": "Fast and cheap — good for straightforward browsing",
+    "note": "Lightweight GPT-4o — good for straightforward browsing",
     "provider": "openai" },
 
-{ "value": "claude-3-5-sonnet-20241022",
-    "label": "Claude 3.5 Sonnet",
-    "note": "Best Anthropic model — precise, thoughtful responses",
+  { "value": "o4-mini",
+    "label": "o4 Mini",
+    "note": "Reasoning model — strong logical analysis, vision support",
+    "provider": "openai" },
+
+  { "value": "o3",
+    "label": "o3",
+    "note": "Top-tier reasoning — best for complex multi-step research",
+    "provider": "openai" },
+
+  { "value": "claude-haiku-4-5-20251001",
+    "label": "Claude Haiku 4.5",
+    "note": "Fastest Claude — best for quick tasks and high volume",
     "provider": "anthropic" },
 
-  { "value": "claude-3-5-haiku-20241022",
-    "label": "Claude 3.5 Haiku",
-    "note": "Fast and affordable Anthropic option",
+  { "value": "claude-sonnet-4-6",
+    "label": "Claude Sonnet 4.6",
+    "note": "Balanced Claude — speed and intelligence for most tasks",
     "provider": "anthropic" },
 
-  { "value": "claude-3-7-sonnet-20250219",
-    "label": "Claude 3.7 Sonnet",
-    "note": "Latest Anthropic — extended thinking capability",
+  { "value": "claude-opus-4-7",
+    "label": "Claude Opus 4.7",
+    "note": "Most capable Claude — best for complex, long-horizon research",
     "provider": "anthropic" }
 ]
