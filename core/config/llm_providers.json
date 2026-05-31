@@ -39,34 +39,44 @@
     "note": "Strong multi-step reasoning — free on Groq",
     "provider": "groq", "free": true },
 
+  { "value": "gpt-5.5",
+    "label": "GPT-5.5",
+    "note": "OpenAI latest flagship — most capable model",
+    "provider": "openai" },
+
+  { "value": "gpt-5.4",
+    "label": "GPT-5.4",
+    "note": "Balanced speed and intelligence — solid everyday choice",
+    "provider": "openai" },
+
+  { "value": "gpt-5.4-mini",
+    "label": "GPT-5.4 Mini",
+    "note": "Fast and affordable — good for high-volume browsing",
+    "provider": "openai" },
+
   { "value": "gpt-4.1",
     "label": "GPT-4.1",
-    "note": "OpenAI latest flagship — top instruction following and vision",
+    "note": "Previous generation flagship — proven and reliable",
     "provider": "openai" },
 
   { "value": "gpt-4.1-mini",
     "label": "GPT-4.1 Mini",
-    "note": "Fast and affordable GPT-4.1 — good balance of speed and quality",
+    "note": "Fast and affordable previous generation",
     "provider": "openai" },
 
   { "value": "gpt-4o",
     "label": "GPT-4o",
-    "note": "Previous OpenAI flagship — battle-tested and reliable",
+    "note": "Battle-tested GPT-4o — still widely supported",
     "provider": "openai" },
 
   { "value": "gpt-4o-mini",
     "label": "GPT-4o Mini",
-    "note": "Lightweight GPT-4o — good for straightforward browsing",
-    "provider": "openai" },
-
-  { "value": "o4-mini",
-    "label": "o4 Mini",
-    "note": "Reasoning model — strong logical analysis, vision support",
+    "note": "Lightweight and cheap — good for simple tasks",
     "provider": "openai" },
 
   { "value": "o3",
     "label": "o3",
-    "note": "Top-tier reasoning — best for complex multi-step research",
+    "note": "Reasoning model — best for complex multi-step logic",
     "provider": "openai" },
 
   { "value": "claude-haiku-4-5-20251001",
