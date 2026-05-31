@@ -350,6 +350,14 @@
     border-radius: 18px 18px 18px 4px;
     font-size: 0.88rem; max-width: 82%;
   }
+  .msg-success {
+    align-self: flex-start;
+    background: var(--green-lt); color: #166534;
+    border: 1px solid #bbf7d0;
+    padding: 10px 14px;
+    border-radius: 18px 18px 18px 4px;
+    font-size: 0.88rem; max-width: 82%;
+  }
 
   /* ── Steps ── */
   .steps-group { align-self: flex-start; width: 100%; max-width: 82%; }
@@ -1094,6 +1102,12 @@
     chat.appendChild(d); scrollChat(); _saveChat();
   }
 
+  function addSuccessMsg(text) {
+    const d = document.createElement('div');
+    d.className = 'msg-success'; d.textContent = text;
+    chat.appendChild(d); scrollChat(); _saveChat();
+  }
+
   function addSkillBadge(skills) {
     if (!skills || !skills.length) return;
     const d = document.createElement('div');
@@ -1568,7 +1582,7 @@
     try {
       await post('/auth-google', {});
       span.textContent = 'Re-auth';
-      addErrorMsg('Google authentication successful. You can now start a task.');
+      addSuccessMsg('Google authentication successful — you can now start a task.');
     } catch(e) {
       span.textContent = 'Re-auth';
       addErrorMsg('Authentication failed: ' + e.message);
@@ -1872,6 +1886,7 @@
       document.querySelector('.ob-card').remove();
       const newCfg = await fetch('/settings').then(r => r.json());
       syncHeaderModel(newCfg);
+      if (isVertex) await doAuthGoogle();
     } catch(e) {
       errEl.textContent = 'Could not save: ' + e.message;
       errEl.classList.remove('hidden');
