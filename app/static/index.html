@@ -584,6 +584,7 @@
     background: var(--surface); border: 1px solid var(--border);
     border-radius: 20px; padding: 28px 24px;
     max-width: 420px; width: 100%;
+    direction: ltr;
     box-shadow: 0 8px 40px rgba(79,70,229,0.09);
     display: flex; flex-direction: column; gap: 22px;
   }
@@ -625,6 +626,9 @@
   }
   .ob-key:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(79,70,229,.08); }
   .ob-err { font-size: 0.78rem; color: var(--red); background: var(--red-lt); border-radius: 8px; padding: 8px 12px; }
+  .ob-auth-toggle { display: flex; border: 1.5px solid var(--border); border-radius: 9px; overflow: hidden; }
+  .ob-auth-btn { flex: 1; padding: 6px; border: none; background: var(--bg); font-size: 0.79rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+  .ob-auth-btn.ob-auth-active { background: var(--accent); color: #fff; }
   .ob-go {
     padding: 13px; background: var(--accent); color: #fff;
     border: none; border-radius: 12px; font-size: 0.9rem; font-weight: 700;
@@ -1800,6 +1804,27 @@
     anthropic: { model: 'claude-3-5-sonnet-20241022',    placeholder: 'sk-ant-...', hint: 'Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com →</a>' },
   };
   let _obProvider = 'groq';
+  let _obAuthType = 'apikey';
+
+  function obKeyInput() {
+    let ok = false;
+    if (_obAuthType === 'vertex') {
+      ok = !!document.getElementById('ob-project').value.trim();
+    } else {
+      ok = !!document.getElementById('ob-key').value.trim();
+    }
+    document.getElementById('ob-go').disabled = !ok;
+  }
+
+  function obSetAuth(type) {
+    _obAuthType = type;
+    document.querySelectorAll('.ob-auth-btn').forEach((b, i) => {
+      b.classList.toggle('ob-auth-active', (i === 0) === (type === 'apikey'));
+    });
+    document.getElementById('ob-apikey-section').classList.toggle('hidden', type !== 'apikey');
+    document.getElementById('ob-vertex-section').classList.toggle('hidden', type !== 'vertex');
+    obKeyInput();
+  }
 
   function obPick(btn) {
     document.querySelectorAll('.ob-prov').forEach(b => b.classList.remove('ob-prov-selected'));
@@ -1810,31 +1835,37 @@
     keyEl.placeholder = cfg.placeholder;
     keyEl.value = '';
     document.getElementById('ob-hint').innerHTML = cfg.hint;
-    document.getElementById('ob-go').disabled = true;
     document.getElementById('ob-err').classList.add('hidden');
+    // Show Vertex toggle only for providers that support it
+    const supportsVertex = ['google', 'anthropic'].includes(_obProvider);
+    document.getElementById('ob-auth-toggle').classList.toggle('hidden', !supportsVertex);
+    obSetAuth('apikey'); // always reset to apikey on provider change
   }
 
   async function obConnect() {
-    const key = document.getElementById('ob-key').value.trim();
-    if (!key) return;
     const btn = document.getElementById('ob-go');
     const errEl = document.getElementById('ob-err');
     btn.disabled = true; btn.textContent = 'Connecting…';
     errEl.classList.add('hidden');
     const p = _obProvider;
+    const isVertex = _obAuthType === 'vertex';
+    const key = isVertex ? '' : document.getElementById('ob-key').value.trim();
+    const project = isVertex ? document.getElementById('ob-project').value.trim() : '';
+    const region  = isVertex ? (document.getElementById('ob-region').value.trim() || 'europe-west3') : '';
     const body = {
       model: _OB_CFG[p].model, orchestrator_model: '',
       max_steps: 100, flash_mode: false, browser_profile: 'viro',
       headless: false, keep_browser_open: false,
       allowed_domains: '', prohibited_domains: '',
       judge_model: '', allowed_actions: '', denied_actions: '', save_full_results: false,
-      google_auth_type: p === 'google' ? 'apikey' : 'vertex',
-      anthropic_auth_type: p === 'anthropic' ? 'apikey' : 'apikey',
-      gemini_api_key:    p === 'google'    ? key : '',
-      google_cloud_project: '', llm_location: '',
-      groq_api_key:      p === 'groq'      ? key : '',
-      openai_api_key:    p === 'openai'    ? key : '',
-      anthropic_api_key: p === 'anthropic' ? key : '',
+      google_auth_type:    (p === 'google'    && isVertex) ? 'vertex' : 'apikey',
+      anthropic_auth_type: (p === 'anthropic' && isVertex) ? 'vertex' : 'apikey',
+      gemini_api_key:      (p === 'google'    && !isVertex) ? key : '',
+      google_cloud_project: isVertex ? project : '',
+      llm_location:         isVertex ? region  : '',
+      groq_api_key:         p === 'groq'      ? key : '',
+      openai_api_key:       p === 'openai'    ? key : '',
+      anthropic_api_key:    (p === 'anthropic' && !isVertex) ? key : '',
     };
     try {
       await post('/settings', body);
@@ -1884,10 +1915,20 @@
         </div>
       </div>
       <div class="ob-block">
-        <div class="ob-block-label">Step 2 &nbsp;·&nbsp; Enter your access key</div>
-        <div class="ob-hint" id="ob-hint">Free — no credit card needed. Get your key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com →</a></div>
-        <input type="password" id="ob-key" class="ob-key" placeholder="gsk_..."
-               oninput="document.getElementById('ob-go').disabled=!this.value.trim()">
+        <div class="ob-block-label">Step 2 &nbsp;·&nbsp; Connect your account</div>
+        <div id="ob-auth-toggle" class="ob-auth-toggle hidden">
+          <button class="ob-auth-btn ob-auth-active" onclick="obSetAuth('apikey')">API Key</button>
+          <button class="ob-auth-btn" onclick="obSetAuth('vertex')">Vertex AI</button>
+        </div>
+        <div id="ob-apikey-section">
+          <div class="ob-hint" id="ob-hint">Free — no credit card needed. Get your key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com →</a></div>
+          <input type="password" id="ob-key" class="ob-key" placeholder="gsk_..." oninput="obKeyInput()">
+        </div>
+        <div id="ob-vertex-section" class="hidden">
+          <div class="ob-hint">Your Google Cloud credentials. Authenticate with Google after connecting.</div>
+          <input type="text" id="ob-project" class="ob-key" placeholder="GCP Project ID" oninput="obKeyInput()" style="letter-spacing:0">
+          <input type="text" id="ob-region" class="ob-key" placeholder="Region  (e.g. europe-west3)" oninput="obKeyInput()" style="letter-spacing:0">
+        </div>
         <div class="ob-err hidden" id="ob-err"></div>
       </div>
       <button id="ob-go" class="ob-go" onclick="obConnect()" disabled>Connect and start →</button>
