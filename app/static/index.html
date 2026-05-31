@@ -530,6 +530,12 @@
     display: flex; gap: 8px; align-items: center; justify-content: flex-end;
     padding: 14px 22px 18px; border-top: 1px solid var(--border); flex-shrink: 0;
   }
+  #btn-reset-settings {
+    padding: 7px 14px; background: transparent; color: var(--muted);
+    border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: all .15s;
+  }
+  #btn-reset-settings:hover { color: var(--red); border-color: #fca5a5; background: var(--red-lt); }
   #btn-cancel-settings {
     padding: 7px 18px; background: var(--bg); color: var(--text);
     border: 1.5px solid var(--border); border-radius: 9px;
@@ -567,8 +573,9 @@
   .skill-badge-icon { font-size: 0.8rem; }
   .msg-queued { opacity: .75; }
   .queued-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--accent); color: #fff; border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
-  #btn-reset { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+  #btn-reset, #btn-clear-chat { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
   #btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+  #btn-clear-chat:hover { border-color: #fca5a5; color: var(--red); }
   textarea:disabled { opacity: .45; cursor: not-allowed; }
 
   /* ── Onboarding ── */
@@ -857,6 +864,8 @@
 
     </div>
     <div class="settings-dialog-footer">
+      <button id="btn-reset-settings" onclick="resetSettings()">Reset</button>
+      <div style="flex:1"></div>
       <button id="btn-cancel-settings" onclick="closeSettings()">Cancel</button>
       <button id="btn-save-settings" onclick="saveSettings()">Save</button>
     </div>
@@ -964,6 +973,7 @@
     <button id="btn-pause"  onclick="doPause()"  disabled>Pause</button>
     <button id="btn-resume" onclick="doResume()" disabled>Resume</button>
     <button id="btn-stop"   onclick="doStop()"   disabled>Stop</button>
+    <button id="btn-clear-chat" onclick="doClearChat()">Clear</button>
     <button id="btn-reset"  onclick="doReset()">New chat</button>
   </div>
   <div id="input-row">
@@ -1212,18 +1222,43 @@
     // setState('done') triggered by SSE 'stopped' event
   }
 
+  function doClearChat() {
+    chat.innerHTML = '';
+    _clearChat();
+    stepsGroup = null;
+    _browserOpenBanner = null;
+  }
+
   async function doReset() {
     if (state === 'running' || state === 'paused') {
       if (!confirm('Reset will stop the current session. Continue?')) return;
     }
     try {
       await post('/reset', {});
-      chat.innerHTML = '';
-      _clearChat();
-      stepsGroup = null;
-      _browserOpenBanner = null;
+      doClearChat();
       if (es) { es.close(); es = null; }
       setState('idle');
+    } catch(e) { addErrorMsg(e.message); }
+  }
+
+  async function resetSettings() {
+    if (!confirm('This will clear all credentials and show the setup screen.')) return;
+    const blank = {
+      model: 'gemini-2.5-flash', orchestrator_model: '', max_steps: 100,
+      flash_mode: false, browser_profile: 'viro', headless: false, keep_browser_open: false,
+      allowed_domains: '', prohibited_domains: '', judge_model: '',
+      allowed_actions: '', denied_actions: '', save_full_results: false,
+      google_auth_type: 'vertex', anthropic_auth_type: 'apikey',
+      gemini_api_key: '', google_cloud_project: '', llm_location: '',
+      groq_api_key: '', openai_api_key: '', anthropic_api_key: '',
+    };
+    try {
+      await post('/settings', blank);
+      closeSettings();
+      doClearChat();
+      syncHeaderModel({ model: '' });
+      setState('idle');
+      showOnboarding();
     } catch(e) { addErrorMsg(e.message); }
   }
 
