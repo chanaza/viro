@@ -452,21 +452,24 @@
   /* Sub-group (visually grouped block within a section) */
   .s-subgroup {
     display: flex; flex-direction: column; gap: 10px;
-    background: #f8fafc; border: 1px solid var(--border);
+    background: var(--surface); border: 1px solid var(--border);
     border-radius: 10px; padding: 12px 14px;
   }
   .s-subgroup-label {
     font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.07em; color: #94a3b8;
+    direction: ltr; text-align: left;
   }
 
   /* Fields */
   .settings-field { display: flex; flex-direction: column; gap: 5px; }
-  .s-label { font-size: 0.75rem; font-weight: 600; color: #334155; }
+  .s-label { font-size: 0.75rem; font-weight: 600; color: #334155; direction: ltr; text-align: left; }
+  .s-section-label { direction: ltr; }
   .settings-field input, .settings-field select, .settings-field textarea {
     padding: 8px 11px; border: 1.5px solid var(--border); border-radius: 9px;
     font-size: 0.83rem; font-family: inherit;
     background: var(--bg); color: var(--text); outline: none;
+    direction: ltr; text-align: left;
     transition: border-color .15s, background .15s;
   }
   .settings-field input:focus, .settings-field select:focus, .settings-field textarea:focus {
@@ -753,7 +756,7 @@
           Routing models
           <span id="model-advanced-chevron" class="chevron" style="font-size:1rem">›</span>
         </div>
-        <div id="model-advanced-section" class="hidden" style="display:none">
+        <div id="model-advanced-section" style="display:none; flex-direction:column; gap:10px">
           <div class="settings-field">
             <span class="s-label">Orchestrator model</span>
             <select id="s-orchestrator-model"></select>
@@ -808,6 +811,13 @@
         </div>
         <div id="security-section" class="hidden">
 
+          <!-- Oversight model — top of Agent Controls, applies to all -->
+          <div class="settings-field">
+            <span class="s-label">Oversight model</span>
+            <select id="s-judge-model"></select>
+            <span class="field-hint">Reviews every browser action before it runs — navigation, clicks, and form input (~1–3 s per step). Select "— disabled —" to turn off.</span>
+          </div>
+
           <!-- Site access -->
           <div class="s-subgroup">
             <div class="s-subgroup-label">Site access</div>
@@ -823,14 +833,9 @@
             </div>
           </div>
 
-          <!-- Action boundaries -->
+          <!-- Action policy -->
           <div class="s-subgroup">
-            <div class="s-subgroup-label">Action boundaries</div>
-            <div class="settings-field">
-              <span class="s-label">Oversight model</span>
-              <select id="s-judge-model"></select>
-              <span class="field-hint">Reviews each browser action before it runs (~1–3 s per step). Select a model to enable; leave empty to disable.</span>
-            </div>
+            <div class="s-subgroup-label">Action policy</div>
             <div class="settings-field">
               <span class="s-label">Agent may</span>
               <textarea id="s-allowed-actions" rows="3" placeholder="Describe what the agent is permitted to do…"></textarea>
@@ -1308,11 +1313,9 @@
   function toggleModelAdvanced() {
     const sec = document.getElementById('model-advanced-section');
     const chev = document.getElementById('model-advanced-chevron');
-    const hidden = sec.style.display === 'none' || sec.style.display === '';
-    sec.style.display = hidden ? 'flex' : 'none';
-    sec.style.flexDirection = 'column';
-    sec.style.gap = '10px';
-    chev.classList.toggle('open', hidden);
+    const opening = sec.style.display === 'none';
+    sec.style.display = opening ? 'flex' : 'none';
+    chev.classList.toggle('open', opening);
   }
 
   // ── Settings ─────────────────────────────────────────────────────────────
@@ -1389,13 +1392,13 @@
       _allModels = modelsData.models || [];
       const knownValues = _allModels.map(m => m.value);
 
-      // Helper: populate a model <select> with an optional "same as agent" first option
-      function populateModelSelect(selId, selectedValue, withSameOption) {
+      // Helper: populate a model <select>. emptyLabel: string → show as first option; falsy → no empty option.
+      function populateModelSelect(selId, selectedValue, emptyLabel) {
         const sel = document.getElementById(selId);
         sel.innerHTML = '';
-        if (withSameOption) {
+        if (emptyLabel) {
           const o = document.createElement('option');
-          o.value = ''; o.textContent = '— same as agent —';
+          o.value = ''; o.textContent = emptyLabel;
           if (!selectedValue) o.selected = true;
           sel.appendChild(o);
         }
@@ -1413,8 +1416,8 @@
       }
 
       populateModelSelect('s-model', cfg.model, false);
-      populateModelSelect('s-orchestrator-model', cfg.orchestrator_model || '', true);
-      populateModelSelect('s-judge-model', cfg.judge_model || '', true);
+      populateModelSelect('s-orchestrator-model', cfg.orchestrator_model || '', '— same as main model —');
+      populateModelSelect('s-judge-model', cfg.judge_model || '', '— disabled —');
 
       // Credentials
       document.getElementById('s-apikey').value   = cfg.gemini_api_key       || '';
