@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 from .models import LLMSettings
 
-_MODELS_PATH = Path(__file__).parent / "config" / "models.json"
+_MODELS_PATH = Path(__file__).parent / "config" / "llm_providers.json"
 _MAX_OUTPUT_TOKENS = 65_536
 
 
