@@ -493,7 +493,7 @@
   }
   .s-toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
   .s-toggle-row:first-child { padding-top: 0; }
-  .s-toggle-text { flex: 1; display: flex; flex-direction: column; gap: 2px; line-height: 1; }
+  .s-toggle-text { flex: 1; display: flex; flex-direction: column; gap: 2px; line-height: 1; direction: ltr; text-align: left; }
   .s-toggle-main { font-size: 0.83rem; color: var(--text); font-weight: 500; }
   .s-toggle-sub { font-size: 0.71rem; color: #94a3b8; }
   .toggle-switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
@@ -699,9 +699,9 @@
     </div>
     <div class="settings-dialog-body">
 
-      <!-- AI Model -->
+      <!-- Agent model -->
       <div class="s-section">
-        <div class="s-section-label">AI Model</div>
+        <div class="s-section-label">Agent model</div>
         <div class="settings-field">
           <select id="s-model" onchange="onModelChange()"></select>
           <div id="model-note" class="model-note"></div>
@@ -752,10 +752,10 @@
         </div>
       </div>
 
-      <!-- Routing models (collapsible, under AI Model visually) -->
+      <!-- Orchestration model (collapsible) -->
       <div class="s-section">
         <div class="s-section-label s-section-collapsible" onclick="toggleModelAdvanced()" style="margin-top:-8px">
-          Routing models
+          Orchestration model
           <span id="model-advanced-chevron" class="chevron" style="font-size:1rem">›</span>
         </div>
         <div id="model-advanced-section" style="display:none; flex-direction:column; gap:10px">
